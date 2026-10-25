@@ -1,0 +1,9 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile.dev
+    volumes:
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+      - ./uploads:/app/uploads
