@@ -1,0 +1,31 @@
+
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# Python virtual environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE settings
+.idea/
+
+# Local uploads and user data
+uploads/
+*.log
+
+# Local databases and backups
+*.db
+*.sqlite3
+*.dump
+*.backup
+
+# OS files
+.DS_Store
+Thumbs.db
