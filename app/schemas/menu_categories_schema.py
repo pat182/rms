@@ -31,10 +31,10 @@ class MenuCategoryDataV2(BaseModel):
     sort_order : int
     created_at: datetime
     updated_at: datetime
-    subcategories: list["MenuCategoryDataV2"] = Field(default_factory=list)
+    subcategories: list["MenuSubCategoryData"] = Field(default_factory=list)
     menu_items: list["MenuItemData"] = Field(default_factory=list)
 
-class MenuCategoryData(BaseModel):
+class MenuSubCategoryData(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
     )
@@ -54,7 +54,7 @@ class CreatedMenuCategoryData(BaseModel):
     sort_order: int
     created_at: datetime
     updated_at: datetime
-    subcategories: list[MenuCategoryData] = Field(
+    subcategories: list[MenuSubCategoryData] = Field(
         default_factory=list
     )
 

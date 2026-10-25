@@ -18,7 +18,7 @@ __all__ = [
     'MenuDataV2',
     'MenuItemData',
     'MenuData',
-    'MenuCategoryData',
+    'MenuSubCategoryData',
     'MenuCategoryDataV2',
     "CreateMenuResponse",
     "MenuResponse",
