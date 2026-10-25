@@ -1,9 +1,9 @@
 from app.core.dependencies import get_db
-from app.schemas import (CreateMenuItemRequest)
+from app.dependencies.menu_dependencies.menu_dependecies import get_menu_item_service
+from app.schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
 from app.services.menu.menu_item_service import MenuItemService
 from app.services import FileStorageService
 from app.model.repositories import MenuItemRepository
-
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, File,Depends, UploadFile,HTTPException
@@ -13,16 +13,27 @@ router = APIRouter(
     tags=["Menu Items"]
 )
 
-@router.post("/",)
-async def create_menu_item(menu_id:int,payload: list[CreateMenuItemRequest], db: AsyncSession = Depends(get_db) ):
-    menu_item_service = MenuItemService(db=db)
+@router.post("/",response_model=CreateMenuItemResponse)
+async def create_menu_item(
+    menu_id: int,
+    payload: list[CreateMenuItemRequest],
+    db: AsyncSession = Depends(get_db),
+    item_service: MenuItemService = Depends(get_menu_item_service)
+):
 
-    new_item = await menu_item_service.create_menu_item(menu_id, payload)
+    try:
+        async with db.begin():
+            new_item = await item_service.create_menu_item(
+                menu_id,
+                payload,
+            )
+            return CreateMenuItemResponse(
+                success=True,
+                data=new_item
+            )
+    except Exception:
+        raise
 
-    return {
-        "success": True,
-        "data" : new_item
-    }
 
 
 @router.post("/{menu_item_id}/menu-item-image")
