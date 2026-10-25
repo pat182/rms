@@ -19,7 +19,7 @@ __all__ = [
     'MenuItemData',
     'MenuData',
     'MenuSubCategoryData',
-    'MenuCategoryDataV2',
+    'MenuCategoryData',
     "CreateMenuResponse",
     "MenuResponse",
     "LoginRequest",

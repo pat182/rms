@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.schemas.menu_categories_schema import MenuCategoryDataV2
+from app.schemas.menu_categories_schema import MenuCategoryData
 from app.schemas.menu_item_schema import MenuItemData
 
 from pydantic import BaseModel,ConfigDict,Field
@@ -27,7 +27,7 @@ class MenuDataV2(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    categories: list[MenuCategoryDataV2] = Field(
+    categories: list[MenuCategoryData] = Field(
         default_factory=list
     )
 
