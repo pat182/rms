@@ -20,7 +20,7 @@ class CreateMenuCategoryRequest(BaseModel):
 class CreateCompleteMenuCategoryRequest(CreateMenuCategoryRequest):
     menu_items: list[CreateMenuItemRequest] = []
 
-class MenuCategoryDataV2(BaseModel):
+class MenuCategoryData(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
     )
