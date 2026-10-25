@@ -53,4 +53,5 @@ async def create_menu(payload: CreateMenuRequest, db: AsyncSession = Depends(get
 
 @router.post("/complete")
 async def create_menu_complete(payload: CreateMenuRequest, db: AsyncSession = Depends(get_db)):
+    
     pass
