@@ -1,13 +1,19 @@
 from typing import Literal, Optional
 
 from app.core.dependencies import get_db
-from app.schemas import (CreateMenuRequest,CreateMenuResponse,MenuResponse,PaginatedResponse,MenuData)
+from app.dependencies.menu_dependencies.menu_dependecies import (
+    get_menu_service, get_menu_item_service, get_menu_category_service
+)
+from app.schemas import (
+    CreateMenuRequest,
+    CreateMenuResponse,
+    MenuResponse, PaginatedResponse, MenuData, CreateCompleteMenuRequest, CreateCompleteMenuResponse
+)
 from app.model.repositories import MenuRepository
 
-from app.services import MenuService
-from fastapi import APIRouter, Depends, Query
+from app.services import MenuService,MenuItemService,MenuCategoryService
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
 
 router = APIRouter(
     prefix="/v1/menus",
@@ -30,8 +36,7 @@ async def index(page:int=Query(1,ge=1),
 
 
 @router.get("/{menu_id}",response_model=MenuResponse)
-async def get_menu(menu_id:int , db: AsyncSession = Depends(get_db)):
-    menu_service = MenuService(db)
+async def get_menu(menu_id:int , db: AsyncSession = Depends(get_db),menu_service: MenuService = Depends(get_menu_service)):
 
     menu = await menu_service.get_menu(menu_id)
 
@@ -41,17 +46,50 @@ async def get_menu(menu_id:int , db: AsyncSession = Depends(get_db)):
     )
 
 @router.post("/", response_model=CreateMenuResponse)
-async def create_menu(payload: CreateMenuRequest, db: AsyncSession = Depends(get_db)):
-    menu_service = MenuService(db)
+async def create_menu(
+        payload: CreateMenuRequest,
+        db: AsyncSession = Depends(get_db),
+        menu_service: MenuService = Depends(get_menu_service)
+):
 
-    new_menu = await menu_service.create_menu(payload)
+    try:
+        async with db.begin():
+            new_menu = await menu_service.create_menu(payload)
+            return {
+                "success": True,
+                "data": new_menu
+            }
 
-    return {
-        "success": True,
-        "data": new_menu
-    }
+    except HTTPException:
+        raise
 
-@router.post("/complete")
-async def create_menu_complete(payload: CreateMenuRequest, db: AsyncSession = Depends(get_db)):
-    
-    pass
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create menu",
+        )
+
+@router.post("/complete",response_model=CreateCompleteMenuResponse)
+async def create_menu_complete(
+        payload: CreateCompleteMenuRequest,
+        db: AsyncSession = Depends(get_db),
+        menu_service: MenuService = Depends(get_menu_service),
+        item_service: MenuItemService = Depends(get_menu_item_service),
+        category_service: MenuCategoryService = Depends(get_menu_category_service)
+):
+
+    try:
+        async with db.begin():
+            menu = await menu_service.create_complete_menu(payload,item_service,category_service)
+            return CreateCompleteMenuResponse(
+                success=True,
+                data=menu
+            )
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create menu",
+        )

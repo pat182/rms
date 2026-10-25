@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict
 class CreateMenuItemRequest(BaseModel):
     menu_id: int
     menu_category_id: int | None = None
-    is_active: bool = False
     item_name: str
     description: str | None = None
     price: Decimal
@@ -33,4 +32,4 @@ class MenuItemData(BaseModel):
 
 class CreateMenuItemResponse(BaseModel):
     success: bool
-    data: MenuItemData
+    data: list[MenuItemData]

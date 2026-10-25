@@ -1,8 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy.util.queue import Empty
-
-from app.schemas.menu_item_schema import MenuItemData
+from app.schemas.menu_item_schema import MenuItemData,CreateMenuItemRequest
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -10,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class CreateSubcategoryRequest(BaseModel):
     category_name: str
     sort_order: int = 0
-
+    menu_items: list[CreateMenuItemRequest] = []
 
 class CreateMenuCategoryRequest(BaseModel):
     category_name: str
@@ -18,6 +16,9 @@ class CreateMenuCategoryRequest(BaseModel):
     subcategories: list[CreateSubcategoryRequest] = Field(
         default_factory=list
     )
+
+class CreateCompleteMenuCategoryRequest(CreateMenuCategoryRequest):
+    menu_items: list[CreateMenuItemRequest] = []
 
 class MenuCategoryDataV2(BaseModel):
     model_config = ConfigDict(

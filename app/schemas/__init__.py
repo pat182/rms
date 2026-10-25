@@ -11,6 +11,7 @@ __all__ = [
     "CreateRestaurantResponse",
     "RestaurantStatusRequest",
     "CreateMenuRequest",
+    "CreateCompleteMenuRequest",
     "CreateMenuCategoryRequest",
     "CreateMenuCategoryResponse",
     "CreateMenuItemRequest",
@@ -28,4 +29,7 @@ __all__ = [
     "UsersResponseV2",
     "UserHttpResponse",
     "PaginatedResponse",
+    "CreateMenuItemResponse",
+    "CreateCompleteMenuCategoryRequest",
+    "CreateCompleteMenuResponse"
 ]
