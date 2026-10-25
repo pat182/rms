@@ -4,7 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 
 class CreateMenuItemRequest(BaseModel):
-    menu_id: int
+    # menu_id: int
     menu_category_id: int | None = None
     item_name: str
     description: str | None = None
