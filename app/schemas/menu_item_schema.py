@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
+from app.core.base_schema import BaseSchema
+from pydantic import ConfigDict,Field,field_validator
 
-from pydantic import BaseModel, ConfigDict
-
-class CreateMenuItemRequest(BaseModel):
-    # menu_id: int
+class CreateMenuItemRequest(BaseSchema):
+    client_id: str | None = None
     menu_category_id: int | None = None
     item_name: str
     description: str | None = None
@@ -13,7 +13,22 @@ class CreateMenuItemRequest(BaseModel):
     is_available: bool = True
     sort_order: int | None = None
 
-class MenuItemData(BaseModel):
+    @field_validator("item_name")
+    @classmethod
+    def validate_menu_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("item name is required.")
+        return value
+
+    @field_validator("price")
+    @classmethod
+    def validate_price(cls, value: Decimal) -> Decimal:
+        if value <= 0:
+            raise ValueError("Price should be greater than 0.")
+        return value
+
+class MenuItemData(BaseSchema):
     model_config = ConfigDict(
         from_attributes=True
     )
@@ -29,7 +44,9 @@ class MenuItemData(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+class MenuItemDataWithClientID(MenuItemData):
+    client_id: str | None = None
 
-class CreateMenuItemResponse(BaseModel):
+class CreateMenuItemResponse(BaseSchema):
     success: bool
     data: list[MenuItemData]

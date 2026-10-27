@@ -1,18 +1,19 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from app.core.base_schema import BaseSchema
+from pydantic import EmailStr
 
-class RestaurantStatusRequest(BaseModel):
+class RestaurantStatusRequest(BaseSchema):
     is_active: bool
 
-class CreateRestaurantRequest(BaseModel):
+class CreateRestaurantRequest(BaseSchema):
     country_id: int
     restaurant_name: str
     contact_number: str
     address: str
     email: EmailStr | None = None
 
-class RestaurantData(BaseModel):
+class RestaurantData(BaseSchema):
     id: int
     country_id: int
     restaurant_name: str
@@ -26,6 +27,6 @@ class RestaurantData(BaseModel):
         "from_attributes": True
     }
 
-class CreateRestaurantResponse(BaseModel):
+class CreateRestaurantResponse(BaseSchema):
     success: bool
     data: RestaurantData
