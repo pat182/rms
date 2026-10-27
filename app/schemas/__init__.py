@@ -15,7 +15,7 @@ __all__ = [
     "CreateMenuCategoryRequest",
     "CreateMenuCategoryResponse",
     "CreateMenuItemRequest",
-    'MenuDataV2',
+    'MenuDataWithRelationship',
     'MenuItemData',
     'MenuData',
     'MenuSubCategoryData',
@@ -31,5 +31,8 @@ __all__ = [
     "PaginatedResponse",
     "CreateMenuItemResponse",
     "CreateCompleteMenuCategoryRequest",
-    "CreateCompleteMenuResponse"
+    "CreateCompleteMenuResponse",
+    "UpdateMenuStatusRequest",
+    "MenuItemDataWithClientID",
+    "CompleteMenuData"
 ]

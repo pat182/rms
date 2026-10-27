@@ -1,5 +1,5 @@
 from app.model.menu_item import MenuItem
-from app.schemas import CreateMenuItemRequest
+from app.schemas import CreateMenuItemRequest, MenuItemData
 from app.model import (Menu,MenuCategory)
 
 
@@ -54,20 +54,30 @@ class MenuItemService:
                 )
                 sort_order = (max_sort_order or 0) + 1
 
-            menu_items.append(
-                self.model(
-                    menu_id=menu_id,
-                    menu_category_id=item.menu_category_id,
-                    item_name=item.item_name,
-                    description=item.description,
-                    price=item.price,
-                    image_url=item.image_url,
-                    is_available=item.is_available,
-                    sort_order=sort_order,
-                )
+            created_item = self.model(
+                menu_id=menu_id,
+                menu_category_id=item.menu_category_id,
+                item_name=item.item_name,
+                description=item.description,
+                price=item.price,
+                image_url=item.image_url,
+                is_available=item.is_available,
+                sort_order=sort_order,
             )
 
-        self.db.add_all(menu_items)
+            menu_items.append((item.client_id, created_item))
+
+        self.db.add_all([
+            created_item
+            for client_id, created_item in menu_items
+        ])
+
         await self.db.flush()
 
-        return menu_items
+        return [
+            {
+                **MenuItemData.model_validate(created_item).model_dump(),
+                "client_id": client_id,
+            }
+            for client_id, created_item in menu_items
+        ]

@@ -1,25 +1,54 @@
+
 from datetime import datetime
 
-from app.schemas.menu_categories_schema import MenuCategoryData
-from app.schemas.menu_item_schema import MenuItemData
+from pydantic import ConfigDict, Field, field_validator
+from app.core.base_schema import BaseSchema
 
-from pydantic import BaseModel,ConfigDict,Field
-from app.schemas.menu_categories_schema import CreateCompleteMenuCategoryRequest
-from app.schemas.menu_item_schema import CreateMenuItemRequest
+from app.schemas.menu_categories_schema import (
+    MenuCategoryData,
+    CreateCompleteMenuCategoryRequest,
+)
+from app.schemas.menu_item_schema import (
+    MenuItemData,
+    MenuItemDataWithClientID,
+    CreateMenuItemRequest,
+)
 
-class CreateMenuRequest(BaseModel):
+
+# ==================== REQUEST SCHEMAS ====================
+
+class CreateMenuRequest(BaseSchema):
     menu_name: str
     description: str | None = None
     is_active: bool = False
 
-class CreateCompleteMenuRequest(CreateMenuRequest):
-    categories: list[CreateCompleteMenuCategoryRequest] = []
-    menu_items: list[CreateMenuItemRequest] = []
+    @field_validator("menu_name")
+    @classmethod
+    def validate_menu_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Menu name is required.")
+        return value
 
-class MenuDataV2(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True
+
+class CreateCompleteMenuRequest(CreateMenuRequest):
+    categories: list[CreateCompleteMenuCategoryRequest] = Field(
+        default_factory=list
     )
+    menu_items: list[CreateMenuItemRequest] = Field(
+        default_factory=list
+    )
+
+
+class UpdateMenuStatusRequest(BaseSchema):
+    is_active: bool
+
+
+# ==================== DATA SCHEMAS ====================
+
+class MenuData(BaseSchema):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     restaurant_id: int
     menu_name: str
@@ -27,34 +56,35 @@ class MenuDataV2(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+class MenuDataWithRelationship(MenuData):
     categories: list[MenuCategoryData] = Field(
         default_factory=list
     )
-
     menu_items: list[MenuItemData] = Field(
         default_factory=list
     )
 
-class MenuData(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True
+
+class CompleteMenuData(MenuDataWithRelationship):
+    menu_items: list[MenuItemDataWithClientID] = Field(
+        default_factory=list
     )
-    id: int
-    restaurant_id: int
-    menu_name: str
-    description: str | None = None
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
 
-class MenuResponse(BaseModel):
+
+# ==================== RESPONSE SCHEMAS ====================
+
+class MenuResponse(BaseSchema):
     success: bool
-    data: MenuDataV2
+    data: MenuDataWithRelationship
 
-class CreateMenuResponse(BaseModel):
+
+class CreateMenuResponse(BaseSchema):
     success: bool
     data: MenuData
 
-class CreateCompleteMenuResponse(BaseModel):
+
+class CreateCompleteMenuResponse(BaseSchema):
     success: bool
-    data: MenuDataV2
+    data: CompleteMenuData
