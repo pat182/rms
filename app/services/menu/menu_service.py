@@ -1,13 +1,13 @@
 from app.model.menu import Menu
-from app.schemas import CreateMenuRequest, MenuDataV2, CreateCompleteMenuRequest, MenuItemData, MenuData
+from app.schemas import CreateMenuRequest, MenuDataWithRelationship, CreateCompleteMenuRequest, MenuItemData, MenuData, \
+    MenuItemDataWithClientID, CompleteMenuData
 from app.model.repositories import MenuRepository, RestaurantRepository
 from .menu_category_service import MenuCategoryService
 from .menu_item_service import MenuItemService
+from app.core.logger import log_info, log_warning
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-
-
 
 class MenuService:
     def __init__(self,db: AsyncSession):
@@ -15,7 +15,7 @@ class MenuService:
         self.repo = MenuRepository(self.db)
 
     async def get_menu(self,menu_id:int):
-        menu = await self.repo.get_by_id(menu_id)
+        menu = await self.repo.modified_get_by_id(menu_id)
 
         if not menu:
             raise HTTPException(
@@ -23,7 +23,7 @@ class MenuService:
                 detail=f"Menu with ID {menu_id} not found"
             )
 
-        return MenuDataV2(
+        return MenuDataWithRelationship(
             id=menu.id,
             restaurant_id=menu.restaurant_id,
             menu_name=menu.menu_name,
@@ -34,6 +34,27 @@ class MenuService:
             categories=menu.categories,
             menu_items = menu.menu_items,
         )
+
+    async def update_status(self,menu_id:int,is_active:bool)->MenuData:
+        menu = await self.repo.get_by_id(menu_id)
+
+        if not menu:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Menu with ID {menu_id} not found"
+            )
+
+        if is_active:
+            await self.repo.deactivate_other_menus(
+                restaurant_id=menu.restaurant_id,
+                menu_id=menu.id,
+            )
+
+        menu.is_active = is_active
+
+        await self.db.flush()
+        await self.db.refresh(menu)
+        return menu
 
     async def create_menu(self,payload: CreateMenuRequest) -> Menu:
 
@@ -66,6 +87,8 @@ class MenuService:
     ):
         new_menu = await self.create_menu(payload)
 
+        await self.update_status(new_menu.id,new_menu.is_active)
+
         menu_items = []
         categories = []
 
@@ -76,9 +99,10 @@ class MenuService:
             )
 
             menu_items = [
-                MenuItemData.model_validate(item)
+                MenuItemDataWithClientID.model_validate(item)
                 for item in items
             ]
+
 
         if payload.categories:
             categories = await category_service.create_complete_menu_category(
@@ -86,19 +110,8 @@ class MenuService:
                 payload.categories,
                 item_service,
             )
-        return MenuDataV2(
+        return CompleteMenuData(
             **MenuData.model_validate(new_menu).model_dump(),
             categories=categories,
             menu_items=menu_items,
         )
-        # return {
-        #     "id": new_menu.id,
-        #     "restaurant_id": new_menu.restaurant_id,
-        #     "menu_name": new_menu.menu_name,
-        #     "description": new_menu.description,
-        #     "is_active": new_menu.is_active,
-        #     "created_at": new_menu.created_at,
-        #     "updated_at": new_menu.updated_at,
-        #     "menu_items": menu_items,
-        #     "categories": categories,
-        # }

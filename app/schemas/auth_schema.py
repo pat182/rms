@@ -1,21 +1,21 @@
 from app.schemas.user_schema import UserResponse
+from app.core.base_schema import BaseSchema
 
-from pydantic import BaseModel
 from typing import Optional,Union
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(BaseSchema):
     email: str
     password: str
 
-class Tokens(BaseModel):
+class Tokens(BaseSchema):
     expires_in: int
     expires_at: str
     r_expires_in: int
     r_expires_at: str
     user: UserResponse
 
-class AppTokens(BaseModel):
+class AppTokens(BaseSchema):
     access_token : str
     expires_in: int
     expires_at: str
@@ -23,6 +23,6 @@ class AppTokens(BaseModel):
     r_expires_in: int
     r_expires_at: str
 
-class TokenResponse(BaseModel):
+class TokenResponse(BaseSchema):
     csrf: Optional[str] = None
     token : Union[Tokens,AppTokens]

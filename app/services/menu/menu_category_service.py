@@ -2,7 +2,8 @@ from collections import defaultdict
 
 from app.model.menu import Menu
 from app.model.menu_category import MenuCategory
-from app.schemas import CreateMenuCategoryRequest, CreateCompleteMenuCategoryRequest, MenuItemData
+from app.schemas import CreateMenuCategoryRequest, CreateCompleteMenuCategoryRequest, MenuItemData, \
+    MenuItemDataWithClientID
 from .menu_item_service import MenuItemService
 
 from sqlalchemy import func, select
@@ -133,11 +134,10 @@ class MenuCategoryService:
             payload: list[CreateCompleteMenuCategoryRequest],
             item_service: MenuItemService,
     ):
-        # 1. Validate menu exists
+        # 1. Validate that the menu exists
         menu = await self.db.scalar(
             select(Menu.id).where(Menu.id == menu_id)
         )
-
         if menu is None:
             raise HTTPException(
                 status_code=404,
@@ -159,33 +159,35 @@ class MenuCategoryService:
 
         max_sort_orders = dict(result.all())
 
-        # 3. Create all top-level categories
+        # 3. Create top-level categories, retaining their client_id
         categories = []
-        next_category_order = (max_sort_orders.get(None) or -1) + 1
 
         for category_data in payload:
-            categories.append(
-                self.model(
-                    menu_id=menu_id,
-                    parent_id=None,
-                    category_name=category_data.category_name,
-                    sort_order=category_data.sort_order,
-                )
+            category = self.model(
+                menu_id=menu_id,
+                parent_id=None,
+                category_name=category_data.category_name,
+                sort_order=category_data.sort_order,
             )
-            next_category_order += 1
 
-        self.db.add_all(categories)
+            categories.append(
+                (category_data.client_id, category)
+            )
+
+        self.db.add_all([
+            category
+            for _, category in categories
+        ])
+
         await self.db.flush()
 
-        # Collect nested menu items for one service call
+        # 4. Collect items and create subcategories
         nested_items_payload = []
-
-        # 4. Create all subcategories
         subcategories = []
         subcategory_payloads = []
 
-        for category_data, category in zip(payload, categories):
-            # Collect items directly belonging to this category
+        for category_data, (_, category) in zip(payload, categories):
+            # Items directly under the top-level category
             nested_items_payload.extend(
                 item.model_copy(
                     update={"menu_category_id": category.id}
@@ -193,26 +195,30 @@ class MenuCategoryService:
                 for item in category_data.menu_items
             )
 
-            next_subcategory_order = ( max_sort_orders.get(category.id) or -1) + 1
-
+            # Create subcategories and preserve their client_id
             for subcategory_data in category_data.subcategories:
+                subcategory = self.model(
+                    menu_id=menu_id,
+                    parent_id=category.id,
+                    category_name=subcategory_data.category_name,
+                    sort_order=subcategory_data.sort_order,
+                )
+
                 subcategories.append(
-                    self.model(
-                        menu_id=menu_id,
-                        parent_id=category.id,
-                        category_name=subcategory_data.category_name,
-                        sort_order=subcategory_data.sort_order,
-                    )
+                    (subcategory_data.client_id, subcategory)
                 )
                 subcategory_payloads.append(subcategory_data)
-                next_subcategory_order += 1
 
         if subcategories:
-            self.db.add_all(subcategories)
+            self.db.add_all([
+                subcategory
+                for _, subcategory in subcategories
+            ])
+
             await self.db.flush()
 
         # 5. Collect items belonging to subcategories
-        for subcategory_data, subcategory in zip(
+        for subcategory_data, (_, subcategory) in zip(
                 subcategory_payloads,
                 subcategories,
         ):
@@ -223,7 +229,7 @@ class MenuCategoryService:
                 for item in subcategory_data.menu_items
             )
 
-        # 6. Insert ALL category and subcategory items in one service call
+        # 6. Insert all category/subcategory items in one service call
         inserted_items = []
 
         if nested_items_payload:
@@ -232,20 +238,23 @@ class MenuCategoryService:
                 nested_items_payload,
             )
 
-        # Group inserted items by their category/subcategory ID
+        # Group items by their category ID, retaining each item's client_id
         items_by_category = defaultdict(list)
 
         for item in inserted_items:
-            items_by_category[item.menu_category_id].append(
-                MenuItemData.model_validate(item).model_dump(mode="json")
+            items_by_category[item["menu_category_id"]].append(
+                MenuItemDataWithClientID.model_validate(item).model_dump(
+                    mode="json"
+                )
             )
 
         # 7. Group subcategories under their parent categories
         subcategories_by_parent = defaultdict(list)
 
-        for subcategory in subcategories:
+        for client_id, subcategory in subcategories:
             subcategories_by_parent[subcategory.parent_id].append({
                 "id": subcategory.id,
+                "client_id": client_id,
                 "menu_id": subcategory.menu_id,
                 "parent_id": subcategory.parent_id,
                 "category_name": subcategory.category_name,
@@ -255,10 +264,11 @@ class MenuCategoryService:
                 "menu_items": items_by_category[subcategory.id],
             })
 
-        # 8. Build final nested response
+        # 8. Build the final nested category response
         return [
             {
                 "id": category.id,
+                "client_id": client_id,
                 "menu_id": category.menu_id,
                 "parent_id": category.parent_id,
                 "category_name": category.category_name,
@@ -268,5 +278,5 @@ class MenuCategoryService:
                 "menu_items": items_by_category[category.id],
                 "subcategories": subcategories_by_parent[category.id],
             }
-            for category in categories
+            for client_id, category in categories
         ]

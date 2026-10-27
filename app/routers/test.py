@@ -21,7 +21,7 @@ async def hash_password():
 
 @router.get("/{test_id}/get-by-id")
 async def get_by_id(test_id: int,db: AsyncSession = Depends(get_db)):
-    menu = await MenuRepository(db).get_by_id(test_id)
+    menu = await MenuRepository(db).modified_get_by_id(test_id)
     return {
         "success": True,
         "data": menu

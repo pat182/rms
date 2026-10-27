@@ -1,26 +1,34 @@
-from fastapi import FastAPI,Request
-
+from pathlib import Path
 from app.core.config import settings
-from app.routers.v1.restaurant import router as restaurant_router
-from app.routers.v1.menu_route import router as menu_router
-from app.routers.v1.menu_category_route import router as menu_category_router
-from app.routers.v1.menu_item_route import router as menu_item_router
-from app.routers.v1.authentication import router as authentication_router
+from app.routers.v1 import (restaurant_router,menu_router,menu_category_router,menu_item_router,authentication_router)
 from app.routers.test import router as test_router
+from app.core.logger_config import setup_logging
 
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI,Request
 
 app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.DEBUG,
 )
+setup_logging()
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOADS_DIR = BASE_DIR / "uploads"
 
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount(
+    "/uploads",
+    StaticFiles(directory=UPLOADS_DIR),
+    name="uploads",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173","http://127.0.0.1:5173"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["Content-Type","X-CSRF-Token","X-Client-Type"],
+    allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
+    allow_headers=["Accept","Content-Type","X-CSRF-Token","X-Client-Type"],
 )
 
 app.include_router(test_router)
