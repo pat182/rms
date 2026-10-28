@@ -1,5 +1,9 @@
 from app.model.menu_item import MenuItem
-from app.schemas import CreateMenuItemRequest, MenuItemData
+from app.model.repositories import MenuItemRepository
+from app.schemas import (
+    CreateMenuItemRequest,
+    MenuItemData,MenuItemDataWithClientID,UpdateCompleteMenuItemRequest
+)
 from app.model import (Menu,MenuCategory)
 
 
@@ -11,8 +15,9 @@ class MenuItemService:
     def __init__(self,db: AsyncSession):
         self.db = db
         self.model = MenuItem
+        self.repo = MenuItemRepository(db)
 
-    async def create_menu_item(
+    async def create_menu_items(
             self,
             menu_id: int,
             payload: list[CreateMenuItemRequest],
@@ -81,3 +86,97 @@ class MenuItemService:
             }
             for client_id, created_item in menu_items
         ]
+
+
+    async def upsert_menu_item(
+        self,
+        menu_id: int,
+        menu_items: list[UpdateCompleteMenuItemRequest],
+    )->list[MenuItemDataWithClientID]:
+
+        if not menu_items:
+            raise ValueError(
+                "update_menu_item() received an empty menu_items list. "
+                "Expected at least one menu item."
+            )
+
+        existing_ids = [
+            item.id for item in menu_items
+            if item.id is not None
+        ]
+
+        result = await self.repo.get_model_by_list_id(menu_id, existing_ids)
+
+        existing_items = {item.id: item for item in result.all()}
+
+        updated_items = []
+
+        for item_data in menu_items:
+            if item_data.id is not None:
+                item = existing_items.get(item_data.id)
+
+                if item is None:
+                    raise ValueError(
+                        f"Menu item {item_data.id} not found in menu {menu_id}"
+                    )
+
+                item.item_name = item_data.item_name
+                item.description = item_data.description
+                item.price = item_data.price
+                item.image_url = item_data.image_url
+                item.is_available = item_data.is_available
+                item.sort_order = item_data.sort_order
+                item.menu_category_id = item_data.menu_category_id
+
+            else:
+                item = self.model(
+                    menu_id=menu_id,
+                    item_name=item_data.item_name,
+                    description=item_data.description,
+                    price=item_data.price,
+                    image_url=item_data.image_url,
+                    is_available=item_data.is_available,
+                    sort_order=item_data.sort_order,
+                    menu_category_id=item_data.menu_category_id
+                )
+                self.db.add(item)
+
+            item.client_id = item_data.client_id
+            updated_items.append(item)
+
+        await self.db.flush()
+
+        # from app.core.logger import log_info
+
+        # for updated_item in updated_items:
+        #     log_info("==========================")
+        #     log_info("ITEMS", updated_item)
+        #
+        #     log_info("==========================")
+        return updated_items
+
+
+    async def delete_item(
+            self,
+            menu_id: int,
+            ids: list[int],
+    ) -> list[str]:
+        if not ids:
+            return []
+
+        result = await self.repo.get_model_by_list_id(menu_id,ids)
+
+        image_paths = [
+            item.image_url
+            for item in result.all()
+            if item.image_url
+        ]
+
+        await self.repo.delete_item(menu_id,ids)
+
+        await self.db.flush()
+
+        return image_paths
+
+
+
