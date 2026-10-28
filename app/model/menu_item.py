@@ -10,7 +10,7 @@ from sqlalchemy.orm import (Mapped,mapped_column,relationship)
 
 class MenuItem(Base):
     __tablename__ = "menu_items"
-
+    __mapper_args__ = {"eager_defaults": True}
     id: Mapped[int] = mapped_column(
         primary_key=True
     )

@@ -1,13 +1,17 @@
-from app.model.menu import Menu
-from app.schemas import CreateMenuRequest, MenuDataWithRelationship, CreateCompleteMenuRequest, MenuItemData, MenuData, \
-    MenuItemDataWithClientID, CompleteMenuData
-from app.model.repositories import MenuRepository, RestaurantRepository
+from ...model.menu import Menu
+from ...schemas import (
+    CreateMenuRequest, MenuDataWithRelationship, CreateCompleteMenuRequest, MenuData,
+    MenuItemDataWithClientID, CompleteMenuData,UpdateCompleteMenuRequest,
+    ModifiedCompleteMenuData
+)
+from ...model.repositories import MenuRepository, RestaurantRepository
 from .menu_category_service import MenuCategoryService
 from .menu_item_service import MenuItemService
-from app.core.logger import log_info, log_warning
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
 
 class MenuService:
     def __init__(self,db: AsyncSession):
@@ -93,7 +97,7 @@ class MenuService:
         categories = []
 
         if payload.menu_items:
-            items = await item_service.create_menu_item(
+            items = await item_service.create_menu_items(
                 new_menu.id,
                 payload.menu_items,
             )
@@ -115,3 +119,72 @@ class MenuService:
             categories=categories,
             menu_items=menu_items,
         )
+
+    async def update_complete_menu(
+            self,menu_id:int,
+            payload: UpdateCompleteMenuRequest,
+            item_service: MenuItemService,
+            category_service: MenuCategoryService,
+    ):
+        current_menu = await  self.repo.get_by_id(menu_id)
+
+        if not current_menu:
+           raise HTTPException(
+               status_code=404,
+               detail=f"Menu with ID {menu_id} not found"
+        )
+
+        current_menu.menu_name = payload.menu_name
+        current_menu.description = payload.description
+        removed = payload.removed_items
+        menu_items = []
+        categories = []
+        # =========Prepare delete=========
+        removed_item_ids = list({
+            *removed.menu_item_ids,
+            *removed.category_menu_item_ids,
+            *removed.subcategory_menu_item_ids,
+        })
+
+        image_path = await item_service.delete_item(
+            menu_id,
+            removed_item_ids,
+        )
+        await category_service.delete_categories(
+            menu_id,
+            removed.subcategory_ids,
+        )
+        await category_service.delete_categories(
+            menu_id,
+            removed.category_ids,
+        )
+
+        # ==========+++++++++++++++=======
+        from app.core.logger import log_info
+        log_info("==================================")
+        log_info("PAYLOAD:", image_path)
+
+        if payload.menu_items:
+            menu_items = await item_service.upsert_menu_item(current_menu.id, payload.menu_items)
+
+        if payload.categories:
+            categories = await category_service.upsert_complete_menu_categories(menu_id, payload.categories,item_service)
+
+        # return {
+        #     "menu" : current_menu,
+        #     "menu_items": menu_items,
+        #     "cat" : categories
+        # }
+        return ModifiedCompleteMenuData(
+            id=current_menu.id,
+            restaurant_id=current_menu.restaurant_id,
+            menu_name=current_menu.menu_name,
+            description=current_menu.description,
+            is_active=current_menu.is_active,
+            created_at=current_menu.created_at,
+            updated_at=current_menu.updated_at,
+            categories=categories,
+            menu_items=menu_items,
+            removed_image=image_path,
+        )
+

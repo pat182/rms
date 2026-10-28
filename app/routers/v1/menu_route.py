@@ -1,22 +1,24 @@
+from pprint import pprint
 from typing import Literal, Optional
 
-
-from app.core.dependencies import get_db
-from app.dependencies.menu_dependencies.menu_dependecies import (
+from ...core.dependencies import get_db
+from ...dependencies.menu_dependencies.menu_dependecies import (
     get_menu_service, get_menu_item_service, get_menu_category_service
 )
-from app.schemas import (
+from ...schemas import (
     CreateMenuRequest,
     CreateMenuResponse,
     MenuResponse, PaginatedResponse, MenuData, CreateCompleteMenuRequest, CreateCompleteMenuResponse,
     UpdateMenuStatusRequest
 )
-from app.model.repositories import MenuRepository
-from app.core.logger import log_info
+from ...model.repositories import MenuRepository
+from ...schemas.menu.menu_schema_v2 import UpdateCompleteMenuRequest
+from ...services import MenuService,MenuItemService,MenuCategoryService,FileStorageService
 
-from app.services import MenuService,MenuItemService,MenuCategoryService
+
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 router = APIRouter(
     prefix="/v1/menus",
@@ -39,9 +41,15 @@ async def index(page:int=Query(1,ge=1),
 
 @router.get("/{menu_id}",response_model=MenuResponse)
 async def get_menu(menu_id:int , menu_service: MenuService = Depends(get_menu_service)):
+
     try:
         menu = await menu_service.get_menu(menu_id)
 
+        pprint(
+            menu.model_dump(mode="json"),
+            sort_dicts=False,
+            width=100,
+        )
         return MenuResponse(
             success=True,
             data=menu
@@ -54,7 +62,7 @@ async def get_menu(menu_id:int , menu_service: MenuService = Depends(get_menu_se
     except Exception:
         raise HTTPException(
             status_code=500,
-            detail="Failed to create menu",
+            detail="Failed to fetch data",
         )
 
 
@@ -107,7 +115,7 @@ async def create_menu(
             status_code=500,
             detail="Failed to create menu",
         )
-# response_model=CreateCompleteMenuResponse
+
 @router.post("/complete", response_model=CreateCompleteMenuResponse)
 async def create_menu_complete(
         payload: CreateCompleteMenuRequest,
@@ -133,3 +141,42 @@ async def create_menu_complete(
             status_code=500,
             detail="Failed to create menu",
         )
+
+@router.put("/{menu_id}/update/complete",)
+async def update_complete(
+        menu_id: int,
+        payload : UpdateCompleteMenuRequest,
+        db: AsyncSession = Depends(get_db),
+        menu_service: MenuService = Depends(get_menu_service),
+        item_service: MenuItemService = Depends(get_menu_item_service),
+        category_service: MenuCategoryService = Depends(get_menu_category_service)
+):
+    fss = FileStorageService()
+    from app.core.logger import log_info
+    try:
+        async with db.begin():
+            menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service)
+
+
+        # for updated_item in updated_items:
+        log_info("==========================")
+        log_info("MENU", menu)
+        log_info("==========================")
+        for image_path in menu.removed_image:
+            await fss.delete_image(image_path)
+
+        return {
+            "success": True,
+            "data": menu
+        }
+    except HTTPException:
+        raise
+
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create menu",
+        )
+
+
+

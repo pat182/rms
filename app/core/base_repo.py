@@ -40,6 +40,14 @@ class BaseRepo(ABC):
             select(self.model).where(self.model.id == uuid)
         )
 
+    async def get_model_by_list_id(self,_id:int,ids:list[int]):
+        return await self.db.scalars(
+            select(self.model).where(
+                self.model.menu_id == _id,
+                self.model.id.in_(ids),
+            )
+        )
+
     async def filter(
         self,
         page: int,

@@ -4,11 +4,11 @@ from datetime import datetime
 from pydantic import ConfigDict, Field, field_validator
 from app.core.base_schema import BaseSchema
 
-from app.schemas.menu_categories_schema import (
+from app.schemas.menu.menu_categories_schema import (
     MenuCategoryData,
     CreateCompleteMenuCategoryRequest,
 )
-from app.schemas.menu_item_schema import (
+from app.schemas.menu.menu_item_schema import (
     MenuItemData,
     MenuItemDataWithClientID,
     CreateMenuItemRequest,
@@ -48,7 +48,6 @@ class UpdateMenuStatusRequest(BaseSchema):
 
 class MenuData(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     restaurant_id: int
     menu_name: str
@@ -73,6 +72,10 @@ class CompleteMenuData(MenuDataWithRelationship):
     )
 
 
+class ModifiedCompleteMenuData(CompleteMenuData):
+    removed_image: list[str] = Field(
+        default_factory=list
+    )
 # ==================== RESPONSE SCHEMAS ====================
 
 class MenuResponse(BaseSchema):
