@@ -45,11 +45,6 @@ async def get_menu(menu_id:int , menu_service: MenuService = Depends(get_menu_se
     try:
         menu = await menu_service.get_menu(menu_id)
 
-        pprint(
-            menu.model_dump(mode="json"),
-            sort_dicts=False,
-            width=100,
-        )
         return MenuResponse(
             success=True,
             data=menu

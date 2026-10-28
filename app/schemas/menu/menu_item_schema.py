@@ -10,7 +10,7 @@ class CreateMenuItemRequest(BaseSchema):
     description: str | None = None
     price: Decimal
     image_url: str | None = None
-    is_available: bool = True
+    is_available: bool | None = True
     sort_order: int | None = None
 
     @field_validator("item_name")
