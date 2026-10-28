@@ -23,7 +23,7 @@ async def create_menu_item(
 
     try:
         async with db.begin():
-            new_item = await item_service.create_menu_item(
+            new_item = await item_service.create_menu_items(
                 menu_id,
                 payload,
             )

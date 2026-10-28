@@ -16,6 +16,7 @@ class MenuRepository(BaseRepo):
         result = await self.db.scalar(
             select(Menu)
             .where(Menu.id == uuid)
+            # .where(Menu.is_active.is_(True))
             .options(
                 # Load all categories, including subcategories
                 selectinload(Menu.menu_categories)

@@ -73,7 +73,6 @@ def test_get_menu_success(client, menu_service):
 
     assert response.status_code == 200
     body = response.json()
-
     assert body["success"] is True
     assert body["data"]["id"] == 1
     assert body["data"]["categories"] == []

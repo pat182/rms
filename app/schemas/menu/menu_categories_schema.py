@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.schemas.menu_item_schema import MenuItemData,CreateMenuItemRequest,MenuItemDataWithClientID
+from app.schemas.menu.menu_item_schema import CreateMenuItemRequest,MenuItemDataWithClientID
 from app.core.base_schema import BaseSchema
 from pydantic import ConfigDict, Field,field_validator
 

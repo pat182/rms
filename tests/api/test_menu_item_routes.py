@@ -3,7 +3,7 @@ from app.dependencies.menu_dependencies.menu_dependecies import get_menu_item_se
 
 def test_create_menu_items_success(client):
     mock_service = AsyncMock()
-    mock_service.create_menu_item.return_value = [
+    mock_service.create_menu_items.return_value = [
         {
             "id": 72,
             "menu_id": 1,
@@ -44,8 +44,10 @@ def test_create_menu_items_success(client):
         )
 
         assert response.status_code == 200, response.text
+        # print("RESPONSE:", response.json())
+        # print("MOCK CALLED:", mock_service.create_menu_item.await_args_list)
         assert response.json()["success"] is True
         assert response.json()["data"][0]["item_name"] == "Coke Large"
-        mock_service.create_menu_item.assert_awaited_once()
+        mock_service.create_menu_items.assert_awaited_once()
     finally:
         client.app.dependency_overrides.pop(get_menu_item_service, None)
