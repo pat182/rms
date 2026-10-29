@@ -1,12 +1,13 @@
 from app.core.dependencies import get_db
 from app.dependencies.menu_dependencies.menu_dependecies import get_menu_item_service
 from app.schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
+from app.schemas.menu.menu_item_schema import MenuItemResponse
 from app.services.menu.menu_item_service import MenuItemService
 from app.services import FileStorageService
 from app.model.repositories import MenuItemRepository
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, File,Depends, UploadFile,HTTPException
+from fastapi import APIRouter, File,Depends, UploadFile,HTTPException,Request
 
 router = APIRouter(
     prefix="/v1/menus/{menu_id}/menu-items",
@@ -83,3 +84,31 @@ async def upload_menu_item_image(menu_item_id: int,file: UploadFile = File(...),
             "image_url": new_image_url,
         },
     }
+
+@router.delete("/{menu_item_id}/menu-item-image",response_model=MenuItemResponse)
+async def delete_menu_item_image(
+    menu_id:int,
+    menu_item_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    item_service: MenuItemService = Depends(get_menu_item_service),
+
+):
+    try:
+        body = await request.json()
+        image_url = body.get("image_url")
+        async with db.begin():
+            menu_item = await item_service.delete_item_image(menu_id, menu_item_id,image_url)
+            return MenuItemResponse(
+                success=True,
+                data=menu_item,
+            )
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete menu item image",
+        )
+
+
