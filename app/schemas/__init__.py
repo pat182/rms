@@ -16,6 +16,7 @@ __all__ = [
     "CreateCompleteMenuRequest",
     "CreateMenuCategoryRequest",
     "CreateMenuCategoryResponse",
+    "MenuItemResponse",
     "CreateMenuItemRequest",
     'MenuDataWithRelationship',
     'MenuItemData',
