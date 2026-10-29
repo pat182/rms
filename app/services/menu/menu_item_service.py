@@ -1,15 +1,18 @@
-from app.model.menu_item import MenuItem
-from app.model.repositories import MenuItemRepository
-from app.schemas import (
+from ...model.menu_item import MenuItem
+from ...model.repositories import MenuItemRepository
+from ...schemas import (
     CreateMenuItemRequest,
     MenuItemData,MenuItemDataWithClientID,UpdateCompleteMenuItemRequest
 )
-from app.model import (Menu,MenuCategory)
-
+from ...model import (Menu,MenuCategory)
+from ..file_storage_service import FileStorageService
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,func
 from fastapi import HTTPException
+
+
+
 
 class MenuItemService:
     def __init__(self,db: AsyncSession):
@@ -177,6 +180,36 @@ class MenuItemService:
         await self.db.flush()
 
         return image_paths
+
+    async def delete_item_image(
+            self,
+            menu_id: int,
+            item_id: int,
+            image_url: str | None,
+    ) -> MenuItemData:
+        fss = FileStorageService()
+        menu_item_repo = MenuItemRepository(self.db)
+
+        menu_scalars = await menu_item_repo.get_model_by_list_id(
+            menu_id, [item_id]
+        )
+        menu_item = menu_scalars.first()
+
+        if not menu_item:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Menu item with ID {item_id} not found",
+            )
+
+        if image_url:
+            menu_item.image_url = None
+            await fss.delete_image(image_url)
+
+
+        return MenuItemData.model_validate(
+            menu_item, from_attributes=True
+        )
+
 
 
 

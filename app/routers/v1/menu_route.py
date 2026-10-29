@@ -82,7 +82,7 @@ async def update_status(
         except Exception:
             raise HTTPException(
                 status_code=500,
-                detail="Failed to create menu",
+                detail="Failed to update status",
             )
 
 
@@ -147,16 +147,13 @@ async def update_complete(
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
     fss = FileStorageService()
-    from app.core.logger import log_info
+
     try:
         async with db.begin():
             menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service)
 
 
-        # for updated_item in updated_items:
-        log_info("==========================")
-        log_info("MENU", menu)
-        log_info("==========================")
+
         for image_path in menu.removed_image:
             await fss.delete_image(image_path)
 
@@ -170,7 +167,7 @@ async def update_complete(
     except Exception:
         raise HTTPException(
             status_code=500,
-            detail="Failed to create menu",
+            detail="Failed to update menu",
         )
 
 

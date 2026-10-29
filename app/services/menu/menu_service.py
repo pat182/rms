@@ -133,9 +133,13 @@ class MenuService:
                status_code=404,
                detail=f"Menu with ID {menu_id} not found"
         )
-
+        # breakpoint()
         current_menu.menu_name = payload.menu_name
         current_menu.description = payload.description
+
+        # await self.db.flush()
+        # await self.db.refresh(current_menu)
+
         removed = payload.removed_items
         menu_items = []
         categories = []
@@ -175,6 +179,11 @@ class MenuService:
         #     "menu_items": menu_items,
         #     "cat" : categories
         # }
+        # from app.core.logger import log_info
+        # log_info("==========================++++++++++++++++++++++++++++++++++++++++++++++")
+        # log_info("MENU",current_menu)
+        # log_info("==========================")
+        # breakpoint()
         return ModifiedCompleteMenuData(
             id=current_menu.id,
             restaurant_id=current_menu.restaurant_id,

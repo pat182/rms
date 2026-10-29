@@ -22,7 +22,7 @@ class RemovedItemsRequestSchema(BaseSchema):
 
 class UpdateCompleteMenuRequest(BaseSchema):
     menu_name: str
-    description: str
+    description: str | None = None
     is_active: bool = False
     categories: list[UpdateCompleteMenuCategoryRequest] = Field(
         default_factory=list

@@ -50,3 +50,7 @@ class MenuItemDataWithClientID(MenuItemData):
 class CreateMenuItemResponse(BaseSchema):
     success: bool
     data: list[MenuItemData]
+
+class MenuItemResponse(BaseSchema):
+    success: bool
+    data: MenuItemData
