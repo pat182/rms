@@ -92,6 +92,7 @@ def test_get_menu_not_found(client, menu_service):
         detail="Menu not found",
     )
 
+
     response = client.get("/v1/menus/999")
 
     assert response.status_code == 404

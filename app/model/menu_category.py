@@ -1,5 +1,8 @@
 from datetime import datetime
-from app.core.database import Base
+
+from .menu_item import MenuItem
+from .menu import Menu
+from ..core.database import Base
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func,Text
 from sqlalchemy.orm import Mapped, mapped_column,relationship
@@ -63,5 +66,6 @@ class MenuCategory(Base):
     )
     menu_items: Mapped[list["MenuItem"]] = relationship(
         "MenuItem",
-        back_populates="menu_category"
+        back_populates="menu_category",
+        order_by=MenuItem.sort_order.asc()
     )

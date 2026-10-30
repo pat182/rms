@@ -1,4 +1,4 @@
-from typing import Optional
+
 from datetime import datetime
 from app.core.base_schema import BaseSchema
 from app.schemas.restaurant_schema import RestaurantData
@@ -13,7 +13,6 @@ class UserResponse(BaseSchema):
     email: str
     first_name: str
     last_name: str
-    email: str
     created_at: datetime
     updated_at: datetime
     role : RoleData
