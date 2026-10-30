@@ -18,11 +18,11 @@ DATABASE_URL = URL.create(
     database=settings.DB_NAME,
 )
 
-print("DATABASE CONFIG:", {
-    "host": DATABASE_URL.host,
-    "database": DATABASE_URL.database,
-    "username": DATABASE_URL.username,
-})
+# print("DATABASE CONFIG:", {
+#     "host": DATABASE_URL.host,
+#     "database": DATABASE_URL.database,
+#     "username": DATABASE_URL.username,
+# })
 engine = create_async_engine(
     DATABASE_URL,
     echo=True
