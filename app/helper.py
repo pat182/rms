@@ -18,9 +18,11 @@ def set_auth_cookies(
         key="access_token",
         value=access_token,
         httponly=True,
-        samesite="lax",
-        secure=False,   # always True in production
+        # samesite="lax",
+        samesite="none",
+        secure=True,   # always True in production
         max_age=access_exp,
+        path="/"
     )
 
     # Refresh token cookie
@@ -28,9 +30,11 @@ def set_auth_cookies(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        # samesite="lax",
+        samesite="none",
+        secure=True,
         max_age=refresh_exp,
+        path="/"
     )
     if csrf_token:
     # CSRF token cookie (not HttpOnly)
@@ -38,7 +42,9 @@ def set_auth_cookies(
             key="csrf_token",
             value=csrf_token,
             httponly=False,
-            samesite="lax",
-            secure=False,
+            # samesite="lax",
+            samesite="none",
+            secure=True,
             max_age=refresh_exp,
+            path="/"
         )

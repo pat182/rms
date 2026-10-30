@@ -27,7 +27,7 @@ router = APIRouter(
     dependencies=[Depends(get_authenticated_user)],
 )
 
-@router.get("/",response_model=PaginatedResponse[MenuData])
+@router.get("",response_model=PaginatedResponse[MenuData])
 async def index(
         auth_user: User = Depends(get_authenticated_user),
         page:int=Query(1,ge=1),

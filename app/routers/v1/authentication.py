@@ -18,7 +18,7 @@ router = APIRouter(
     tags=["Authentication"]
 )
 
-@router.post("/",response_model=TokenResponse)
+@router.post("",response_model=TokenResponse)
 async def login(response: Response,request:Request, body: LoginRequest,db: AsyncSession = Depends(get_db)):
     auth = AuthService(db, response, request.state.device_info)
 
