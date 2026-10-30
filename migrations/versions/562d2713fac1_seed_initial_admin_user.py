@@ -10,6 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from passlib.context import CryptContext
+from app.core.config import settings
 
 # revision identifiers, used by Alembic.
 revision: str = '562d2713fac1'
@@ -24,7 +25,7 @@ def upgrade() -> None:
         deprecated="auto",
     )
 
-    hashed_password = password_context.hash("test123!@#")
+    hashed_password = password_context.hash(settings.DB_PASSWORD)
 
     result = op.get_bind().execute(
         sa.text("""
@@ -49,34 +50,34 @@ def upgrade() -> None:
         {"password_hash": hashed_password},
     )
 
-    user_id = result.scalar_one()
-
-    op.execute(
-        sa.text("""
-            INSERT INTO restaurant_users (
-                restaurant_id,
-                user_id
-            )
-            VALUES (
-                1,
-                :user_id
-            )
-        """).bindparams(user_id=user_id)
-    )
+    # user_id = result.scalar_one()
+    #
+    # op.execute(
+    #     sa.text("""
+    #         INSERT INTO restaurant_users (
+    #             restaurant_id,
+    #             user_id
+    #         )
+    #         VALUES (
+    #             1,
+    #             :user_id
+    #         )
+    #     """).bindparams(user_id=user_id)
+    # )
 
 
 
 
 def downgrade() -> None:
-    op.execute(
-        sa.text("""
-            DELETE FROM restaurant_users
-            WHERE user_id IN (
-                SELECT id FROM users
-                WHERE email = 'thebackdoors182@gmail.com'
-            )
-        """)
-    )
+    # op.execute(
+    #     sa.text("""
+    #         DELETE FROM restaurant_users
+    #         WHERE user_id IN (
+    #             SELECT id FROM users
+    #             WHERE email = 'thebackdoors182@gmail.com'
+    #         )
+    #     """)
+    # )
 
     op.execute(
         sa.text("""
