@@ -17,7 +17,7 @@ router = APIRouter(
     dependencies=[Depends(get_authenticated_user)]
 )
 
-@router.post("/",response_model=CreateMenuItemResponse)
+@router.post("",response_model=CreateMenuItemResponse)
 async def create_menu_item(
     menu_id: int,
     payload: list[CreateMenuItemRequest],
