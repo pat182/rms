@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -46,8 +47,16 @@ def db():
 
 @pytest.fixture
 def auth_user():
+    now = datetime.now(timezone.utc)
+
     return SimpleNamespace(
         id=1,
+        role_id=1,
+        email="test@example.com",
+        first_name="Test",
+        last_name="User",
+        created_at=now,
+        updated_at=now,
         restaurants=[
             SimpleNamespace(id=1)
         ],
@@ -88,3 +97,15 @@ def client(
         yield test_client
 
     app.dependency_overrides.clear()
+
+@pytest.fixture
+def auth_client(db):
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides.pop(get_authenticated_user, None)
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+
+

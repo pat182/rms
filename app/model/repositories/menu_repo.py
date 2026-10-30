@@ -20,7 +20,7 @@ class MenuRepository(BaseRepo):
                 selectinload(self.model.menu_categories)
                 .selectinload(MenuCategory.subcategories)
                 .selectinload(MenuCategory.menu_items),
-                selectinload(Menu.menu_categories)
+                selectinload(self.model.menu_categories)
                 .selectinload(MenuCategory.menu_items),
 
                 # Only load uncategorized items at menu level

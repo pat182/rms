@@ -4,6 +4,9 @@ from app.core.database import Base
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func,Text
 from sqlalchemy.orm import Mapped, mapped_column,relationship
 
+from app.model.menu_item import MenuItem
+
+
 class Menu(Base):
     __tablename__ = "menus"
     __mapper_args__ = {"eager_defaults": True}
@@ -58,7 +61,8 @@ class Menu(Base):
     menu_items: Mapped[list["MenuItem"]] = relationship(
         "MenuItem",
         back_populates="menu",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        order_by=MenuItem.sort_order.asc(),
     )
 
     @property
