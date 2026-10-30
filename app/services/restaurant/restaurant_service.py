@@ -1,6 +1,6 @@
-from app.model.country import Country
-from app.model.restaurant import Restaurant
-from app.schemas.restaurant_schema import CreateRestaurantRequest
+from ...model import (User,Restaurant,Country)
+from ...model.repositories import RestaurantRepository
+from ...schemas.restaurant_schema import CreateRestaurantRequest
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -10,14 +10,11 @@ class RestaurantService:
     def __init__(self,db: AsyncSession):
         self.db = db
         self.model = Restaurant
+        self.repo = RestaurantRepository(self.db)
 
-    async def get_restaurant(self,restaurant_id):
+    async def get_restaurant(self,restaurant_id,auth_user:User):
 
-        result = await self.db.execute(
-            select(self.model).where(
-                self.model.id == restaurant_id
-            )
-        )
+        result = await self.repo.get_user_restaurant(restaurant_id,auth_user.id)
 
         restaurant = result.scalar_one_or_none()
 
@@ -29,18 +26,17 @@ class RestaurantService:
 
         return restaurant
 
-    async def update_status(self,restaurant_id,is_active: bool):
+    async def update_status(self,restaurant_id,is_active: bool,auth_user:User):
 
-        restaurant = await self.get_restaurant(restaurant_id)
+        restaurant = await self.get_restaurant(restaurant_id,auth_user)
 
         restaurant.is_active = is_active
 
-        await self.db.commit()
-        await self.db.refresh(restaurant)
+        await self.db.flush()
 
         return restaurant
 
-    async def create_restaurant(self,payload: CreateRestaurantRequest):
+    async def create_restaurant(self,payload: CreateRestaurantRequest,auth_user:User):
         country = await self.db.get(Country,payload.country_id)
 
         if not country:
@@ -49,11 +45,7 @@ class RestaurantService:
                 detail="Country not found"
             )
 
-        existing = await self.db.execute(
-            select(self.model).where(
-                self.model.restaurant_name == payload.restaurant_name
-            )
-        )
+        existing = await self.repo.get_resto_by_name(payload.restaurant_name)
 
         if existing.scalar_one_or_none():
             raise HTTPException(
@@ -71,9 +63,11 @@ class RestaurantService:
 
         self.db.add(restaurant)
 
-        await self.db.commit()
+        await self.db.flush()
+        await self.repo.create_restaurant_user(restaurant.id,auth_user.id)
 
-        await self.db.refresh(restaurant)
+
+
 
         return restaurant
 

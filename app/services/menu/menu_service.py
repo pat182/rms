@@ -1,4 +1,5 @@
 from ...model.menu import Menu
+
 from ...schemas import (
     CreateMenuRequest, MenuDataWithRelationship, CreateCompleteMenuRequest, MenuData,
     MenuItemDataWithClientID, CompleteMenuData,UpdateCompleteMenuRequest,
@@ -18,8 +19,8 @@ class MenuService:
         self.db = db
         self.repo = MenuRepository(self.db)
 
-    async def get_menu(self,menu_id:int):
-        menu = await self.repo.modified_get_by_id(menu_id)
+    async def get_menu(self,menu_id:int,auth_restaurant_id:int):
+        menu = await self.repo.modified_get_by_id(menu_id,auth_restaurant_id)
 
         if not menu:
             raise HTTPException(
@@ -39,8 +40,8 @@ class MenuService:
             menu_items = menu.menu_items,
         )
 
-    async def update_status(self,menu_id:int,is_active:bool)->MenuData:
-        menu = await self.repo.get_by_id(menu_id)
+    async def update_status(self,menu_id:int,is_active:bool,auth_restaurant_id)->MenuData:
+        menu = await self.repo.get_by_id(menu_id,auth_restaurant_id)
 
         if not menu:
             raise HTTPException(
@@ -57,12 +58,12 @@ class MenuService:
         menu.is_active = is_active
 
         await self.db.flush()
-        await self.db.refresh(menu)
+
         return menu
 
-    async def create_menu(self,payload: CreateMenuRequest) -> Menu:
+    async def create_menu(self,payload: CreateMenuRequest, restaurant_id:int) -> Menu:
 
-        restaurant = await RestaurantRepository(self.db).get_by_id(1)
+        restaurant = await RestaurantRepository(self.db).get_by_id(restaurant_id)
 
         if not restaurant:
             raise HTTPException(
@@ -88,10 +89,11 @@ class MenuService:
             payload: CreateCompleteMenuRequest,
             item_service: MenuItemService,
             category_service: MenuCategoryService,
+            auth_restaurant_id:int
     ):
-        new_menu = await self.create_menu(payload)
+        new_menu = await self.create_menu(payload,auth_restaurant_id)
 
-        await self.update_status(new_menu.id,new_menu.is_active)
+        await self.update_status(new_menu.id,new_menu.is_active,new_menu.restaurant_id)
 
         menu_items = []
         categories = []
@@ -100,6 +102,7 @@ class MenuService:
             items = await item_service.create_menu_items(
                 new_menu.id,
                 payload.menu_items,
+                auth_restaurant_id
             )
 
             menu_items = [
@@ -125,8 +128,12 @@ class MenuService:
             payload: UpdateCompleteMenuRequest,
             item_service: MenuItemService,
             category_service: MenuCategoryService,
+            auth_restaurant_id:int
     ):
-        current_menu = await  self.repo.get_by_id(menu_id)
+        current_menu = await  self.repo.get_by_id(menu_id,auth_restaurant_id)
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("PAYLOAD:", current_menu.__dict__)
 
         if not current_menu:
            raise HTTPException(
@@ -136,9 +143,6 @@ class MenuService:
         # breakpoint()
         current_menu.menu_name = payload.menu_name
         current_menu.description = payload.description
-
-        # await self.db.flush()
-        # await self.db.refresh(current_menu)
 
         removed = payload.removed_items
         menu_items = []
@@ -151,28 +155,26 @@ class MenuService:
         })
 
         image_path = await item_service.delete_item(
-            menu_id,
+            current_menu.id,
             removed_item_ids,
         )
         await category_service.delete_categories(
-            menu_id,
+            current_menu.id,
             removed.subcategory_ids,
         )
         await category_service.delete_categories(
-            menu_id,
+            current_menu.id,
             removed.category_ids,
         )
 
         # ==========+++++++++++++++=======
-        from app.core.logger import log_info
-        log_info("==================================")
-        log_info("PAYLOAD:", image_path)
+
 
         if payload.menu_items:
             menu_items = await item_service.upsert_menu_item(current_menu.id, payload.menu_items)
 
         if payload.categories:
-            categories = await category_service.upsert_complete_menu_categories(menu_id, payload.categories,item_service)
+            categories = await category_service.upsert_complete_menu_categories(current_menu.id, payload.categories,item_service)
 
         # return {
         #     "menu" : current_menu,
