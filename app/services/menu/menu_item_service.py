@@ -1,5 +1,5 @@
 from ...model.menu_item import MenuItem
-from ...model.repositories import MenuItemRepository
+from ...model.repositories import (MenuItemRepository,MenuRepository)
 from ...schemas import (
     CreateMenuItemRequest,
     MenuItemData,MenuItemDataWithClientID,UpdateCompleteMenuItemRequest
@@ -24,10 +24,9 @@ class MenuItemService:
             self,
             menu_id: int,
             payload: list[CreateMenuItemRequest],
+            auth_restaurant_id: int
     ):
-        menu = await self.db.scalar(
-            select(Menu).where(Menu.id == menu_id)
-        )
+        menu = await MenuRepository(self.db).get_by_id(menu_id,auth_restaurant_id)
 
         if not menu:
             raise HTTPException(
@@ -42,7 +41,7 @@ class MenuItemService:
                 category = await self.db.scalar(
                     select(MenuCategory).where(
                         MenuCategory.id == item.menu_category_id,
-                        MenuCategory.menu_id == menu_id,
+                        MenuCategory.menu_id == menu.id,
                     )
                 )
 
@@ -57,13 +56,13 @@ class MenuItemService:
             if sort_order is None:
                 max_sort_order = await self.db.scalar(
                     select(func.max(MenuItem.sort_order)).where(
-                        MenuItem.menu_id == menu_id
+                        MenuItem.menu_id == menu.id
                     )
                 )
                 sort_order = (max_sort_order or 0) + 1
 
             created_item = self.model(
-                menu_id=menu_id,
+                menu_id=menu.id,
                 menu_category_id=item.menu_category_id,
                 item_name=item.item_name,
                 description=item.description,
@@ -108,7 +107,7 @@ class MenuItemService:
             if item.id is not None
         ]
 
-        result = await self.repo.get_model_by_list_id(menu_id, existing_ids)
+        result = await self.repo.get_model_by_list_id(existing_ids,self.model.menu_id,menu_id)
 
         existing_items = {item.id: item for item in result.all()}
 
@@ -167,7 +166,7 @@ class MenuItemService:
         if not ids:
             return []
 
-        result = await self.repo.get_model_by_list_id(menu_id,ids)
+        result = await self.repo.get_model_by_list_id(ids,self.model.menu_id,menu_id)
 
         image_paths = [
             item.image_url
@@ -183,17 +182,16 @@ class MenuItemService:
 
     async def delete_item_image(
             self,
-            menu_id: int,
             item_id: int,
+            restaurant_id: int,
             image_url: str | None,
     ) -> MenuItemData:
         fss = FileStorageService()
-        menu_item_repo = MenuItemRepository(self.db)
 
-        menu_scalars = await menu_item_repo.get_model_by_list_id(
-            menu_id, [item_id]
-        )
-        menu_item = menu_scalars.first()
+        menu_item = await MenuItemRepository(self.db).get_item(item_id,restaurant_id)
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("MENU _ ITEM:", menu_item.id)
 
         if not menu_item:
             raise HTTPException(

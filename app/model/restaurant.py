@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class Restaurant(Base):
     __tablename__ = "restaurants"
+    __mapper_args__ = {"eager_defaults": True}
     id: Mapped[int] = mapped_column(
         primary_key=True
     )

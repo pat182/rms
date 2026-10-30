@@ -11,7 +11,6 @@ class BaseRepo(ABC):
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.restaurant_id = 1  # TODO: use authenticated restaurant ID
 
     @property
     @abstractmethod
@@ -35,18 +34,36 @@ class BaseRepo(ABC):
 
         return stmt
 
-    async def get_by_id(self, uuid: str | int):
-        return await self.db.scalar(
-            select(self.model).where(self.model.id == uuid)
+    async def get_by_id(
+            self,
+            uuid: str | int,
+            restaurant_id: int | None = None,
+    ):
+        stmt = select(self.model).where(
+            self.model.id == uuid
         )
 
-    async def get_model_by_list_id(self,_id:int,ids:list[int]):
-        return await self.db.scalars(
-            select(self.model).where(
-                self.model.menu_id == _id,
-                self.model.id.in_(ids),
+        if hasattr(self.model, "restaurant_id"):
+            if restaurant_id is None:
+                raise ValueError(
+                    "Restaurant ID is required for this model"
+                )
+            stmt = stmt.where(
+                self.model.restaurant_id == restaurant_id
             )
+
+        return await self.db.scalar(stmt)
+
+    async def get_model_by_list_id(self,ids: list[int],filter_column=None,filter_value=None,):
+        stmt = select(self.model).where(
+            self.model.id.in_(ids)
         )
+
+        if filter_column is not None:
+            stmt = stmt.where(filter_column == filter_value)
+
+        result = await self.db.scalars(stmt)
+        return result
 
     async def filter(
         self,
@@ -55,6 +72,7 @@ class BaseRepo(ABC):
         sort_by: str | None,
         sort_order: str | None,
         search: str | None,
+        restaurant_id: int | None = None,
     ):
         page = max(1, page)
         page_size = min(max(1, page_size), 100)
@@ -64,14 +82,13 @@ class BaseRepo(ABC):
         # Scope queries to the current restaurant when supported.
         if hasattr(self.model, "restaurant_id"):
             stmt = stmt.where(
-                self.model.restaurant_id == self.restaurant_id
+                self.model.restaurant_id == restaurant_id
             )
 
         stmt = self.apply_search(stmt, search)
 
         if sort_by in self.SORT_FIELDS:
             sort_col = getattr(self.model, sort_by, None)
-
             if sort_col is not None:
                 stmt = stmt.order_by(
                     sort_col.asc()

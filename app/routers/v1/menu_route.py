@@ -2,16 +2,17 @@ from pprint import pprint
 from typing import Literal, Optional
 
 from ...core.dependencies import get_db
-from ...dependencies.menu_dependencies.menu_dependecies import (
-    get_menu_service, get_menu_item_service, get_menu_category_service
+from ...dependencies import (
+    get_authenticated_user,get_menu_service, get_menu_item_service, get_menu_category_service
 )
+from ...model import User
 from ...schemas import (
+    MenuResponse,
     CreateMenuRequest,
-    CreateMenuResponse,
-    MenuResponse, PaginatedResponse, MenuData, CreateCompleteMenuRequest, CreateCompleteMenuResponse,
+    CreateMenuResponse,PaginatedResponse, MenuData, CreateCompleteMenuRequest, CreateCompleteMenuResponse,
     UpdateMenuStatusRequest
 )
-from ...model.repositories import MenuRepository
+from ...model.repositories import MenuRepository,UserRepository
 from ...schemas.menu.menu_schema_v2 import UpdateCompleteMenuRequest
 from ...services import MenuService,MenuItemService,MenuCategoryService,FileStorageService
 
@@ -22,11 +23,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(
     prefix="/v1/menus",
-    tags=["Menus"]
+    tags=["Menus"],
+    dependencies=[Depends(get_authenticated_user)],
 )
 
 @router.get("/",response_model=PaginatedResponse[MenuData])
-async def index(page:int=Query(1,ge=1),
+async def index(
+        auth_user: User = Depends(get_authenticated_user),
+        page:int=Query(1,ge=1),
         page_size:int=Query(25,ge=1),
         db: AsyncSession = Depends(get_db),
         sort_by: Optional[Literal["menu_name", "created_at", "updated_at"]] = Query(None),
@@ -35,25 +39,24 @@ async def index(page:int=Query(1,ge=1),
 ):
     menu_repo = MenuRepository(db)
 
-    menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search)
+    menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search,auth_user.restaurants[0].id)
 
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=menu)
 
 @router.get("/{menu_id}",response_model=MenuResponse)
-async def get_menu(menu_id:int , menu_service: MenuService = Depends(get_menu_service)):
-
+async def get_menu(
+        menu_id:int ,
+        auth_user: User = Depends(get_authenticated_user),
+        menu_service: MenuService = Depends(get_menu_service)
+):
     try:
-        menu = await menu_service.get_menu(menu_id)
-
+        menu = await menu_service.get_menu(menu_id,auth_user.restaurants[0].id)
         return MenuResponse(
             success=True,
             data=menu
         )
     except HTTPException:
-        raise HTTPException(
-            status_code=404,
-            detail="Menu not found"
-        )
+        raise
     except Exception:
         raise HTTPException(
             status_code=500,
@@ -66,46 +69,54 @@ async def update_status(
         menu_id: int,
         payload: UpdateMenuStatusRequest,
         db: AsyncSession = Depends(get_db),
-        menu_service: MenuService = Depends(get_menu_service)
+        menu_service: MenuService = Depends(get_menu_service),
+        auth_user: User = Depends(get_authenticated_user),
 ):
-        try:
-            async with db.begin():
-                data = await menu_service.update_status(menu_id,payload.is_active)
 
-                return CreateMenuResponse(
-                    success=True,
-                    data=data
-                )
+        try:
+
+            data = await menu_service.update_status(menu_id,payload.is_active,
+                                                        auth_user.restaurants[0].id)
+            await db.commit()
+            return CreateMenuResponse(
+                success=True,
+                data=data
+            )
         except HTTPException:
+            await db.rollback()
             raise
 
         except Exception:
+            await db.rollback()
             raise HTTPException(
                 status_code=500,
                 detail="Failed to update status",
             )
 
 
-
 @router.post("/", response_model=CreateMenuResponse)
 async def create_menu(
         payload: CreateMenuRequest,
+        auth_user: User = Depends(get_authenticated_user),
         db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service)
 ):
 
     try:
-        async with db.begin():
-            new_menu = await menu_service.create_menu(payload)
-            return {
-                "success": True,
-                "data": new_menu
-            }
+
+        new_menu = await menu_service.create_menu(payload,auth_user.restaurants[0].id)
+        await db.commit()
+        return {
+            "success": True,
+            "data": new_menu
+        }
 
     except HTTPException:
+        await db.rollback()
         raise
 
     except Exception:
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Failed to create menu",
@@ -114,24 +125,27 @@ async def create_menu(
 @router.post("/complete", response_model=CreateCompleteMenuResponse)
 async def create_menu_complete(
         payload: CreateCompleteMenuRequest,
-        db: AsyncSession = Depends(get_db),
+        auth_user: User = Depends(get_authenticated_user),
         menu_service: MenuService = Depends(get_menu_service),
+        db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
     try:
 
-        async with db.begin():
-            menu = await menu_service.create_complete_menu(payload,item_service,category_service)
-            return CreateCompleteMenuResponse(
+        menu = await menu_service.create_complete_menu(payload,item_service,category_service,auth_user.restaurants[0].id)
+        await db.commit()
+        return CreateCompleteMenuResponse(
                 success=True,
                 data=menu
-            )
+        )
 
     except HTTPException:
+        await db.rollback()
         raise
 
     except Exception:
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Failed to create menu",
@@ -141,19 +155,18 @@ async def create_menu_complete(
 async def update_complete(
         menu_id: int,
         payload : UpdateCompleteMenuRequest,
-        db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service),
+        auth_user: User = Depends(get_authenticated_user),
+        db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
     fss = FileStorageService()
 
     try:
-        async with db.begin():
-            menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service)
+        menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service,auth_user.restaurants[0].id)
 
-
-
+        await db.commit()
         for image_path in menu.removed_image:
             await fss.delete_image(image_path)
 
@@ -162,9 +175,11 @@ async def update_complete(
             "data": menu
         }
     except HTTPException:
+        await db.rollback()
         raise
 
     except Exception:
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Failed to update menu",

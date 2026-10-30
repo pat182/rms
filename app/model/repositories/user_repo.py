@@ -21,3 +21,16 @@ class UserRepository(BaseRepo):
         )
 
         return data
+
+    async def modified_get_by_id(self, _id: int) -> User | None:
+        data = await self.db.scalar(
+            select(self.model)
+            .options(
+                selectinload(self.model.role),
+                selectinload(self.model.restaurant_users)
+                .selectinload(RestaurantUser.restaurant)
+            )
+            .where(self.model.id == _id)
+        )
+
+        return data

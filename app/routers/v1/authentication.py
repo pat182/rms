@@ -1,10 +1,9 @@
-from app.services import AuthService
-from app.core.dependencies import get_db
-from app.core.security import SecurityInstance
-from app.helper import set_auth_cookies,clear_auth_cookies
+from ...services import AuthService
+from ...core.dependencies import get_db
+from ...core.security import SecurityInstance
+from ...helper import set_auth_cookies,clear_auth_cookies
+from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse,UserResponse
 
-
-from app.schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse,UserResponse
 from fastapi import APIRouter, Depends,Request,Response,Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,6 +45,9 @@ async def refresh( response: Response,request : Request,
         token_data = await auth.refresh_tokens(refresh_token, payload)
         # return token_data
         token_response = Tokens(**token_data)
+        from app.core.logger import log_info
+        log_info("==================================")
+        log_info("TOKEN", token_data)
         set_auth_cookies(
             response,
             access_token=token_data['access_token'],

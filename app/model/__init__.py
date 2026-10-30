@@ -18,5 +18,6 @@ __all__ = [
     "Role",
     "User",
     "RestaurantUser",
-    "UserRefreshToken"
+    "UserRefreshToken",
+    "User"
 ]
