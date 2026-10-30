@@ -79,11 +79,11 @@ class Security:
         if cookie_token:
 
             if request.method != "GET":
-                from app.core.logger import log_info
-                log_info("==================================")
-                log_info("UI CSRF:", request.headers.get("X-CSRF-Token"))
-                log_info("==================================")
-                log_info("BACKEND", request.cookies.get("csrf_token"))
+                # from app.core.logger import log_info
+                # log_info("==================================")
+                # log_info("UI CSRF:", request.headers.get("X-CSRF-Token"))
+                # log_info("==================================")
+                # log_info("BACKEND", request.cookies.get("csrf_token"))
                 self.verify_csrf(
                     request.headers.get("X-CSRF-Token") if request.headers.get("X-CSRF-Token") else None,
                     request.cookies.get("csrf_token")
