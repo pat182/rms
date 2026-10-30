@@ -1,19 +1,21 @@
+
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+from datetime import datetime, timezone
+
+import pytest
+from fastapi.testclient import TestClient
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-
-from unittest.mock import AsyncMock
-
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app  # Adjust if your FastAPI app is elsewhere
+from app.main import app
 from app.core.dependencies import get_db
+from app.dependencies import get_authenticated_user
 from app.dependencies.menu_dependencies.menu_dependecies import (
     get_menu_service,
     get_menu_item_service,
@@ -30,6 +32,10 @@ class FakeTransaction:
 
 
 class FakeDB:
+    def __init__(self):
+        self.commit = AsyncMock()
+        self.rollback = AsyncMock()
+
     def begin(self):
         return FakeTransaction()
 
@@ -37,6 +43,24 @@ class FakeDB:
 @pytest.fixture
 def db():
     return FakeDB()
+
+
+@pytest.fixture
+def auth_user():
+    now = datetime.now(timezone.utc)
+
+    return SimpleNamespace(
+        id=1,
+        role_id=1,
+        email="test@example.com",
+        first_name="Test",
+        last_name="User",
+        created_at=now,
+        updated_at=now,
+        restaurants=[
+            SimpleNamespace(id=1)
+        ],
+    )
 
 
 @pytest.fixture
@@ -55,8 +79,16 @@ def category_service():
 
 
 @pytest.fixture
-def client(db, menu_service, item_service, category_service):
+def client(
+    db,
+    auth_user,
+    menu_service,
+    item_service,
+    category_service,
+):
     app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_authenticated_user] = lambda: auth_user
+
     app.dependency_overrides[get_menu_service] = lambda: menu_service
     app.dependency_overrides[get_menu_item_service] = lambda: item_service
     app.dependency_overrides[get_menu_category_service] = lambda: category_service
@@ -65,3 +97,15 @@ def client(db, menu_service, item_service, category_service):
         yield test_client
 
     app.dependency_overrides.clear()
+
+@pytest.fixture
+def auth_client(db):
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides.pop(get_authenticated_user, None)
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
+
+

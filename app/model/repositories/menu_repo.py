@@ -12,18 +12,15 @@ class MenuRepository(BaseRepo):
     def model(self):
         return Menu
 
-    async def modified_get_by_id(self, uuid: str | int):
+    async def modified_get_by_id(self, uuid: str | int, restaurant_id: int):
         result = await self.db.scalar(
-            select(Menu)
-            .where(Menu.id == uuid)
-            # .where(Menu.is_active.is_(True))
+            select(self.model)
             .options(
                 # Load all categories, including subcategories
-                selectinload(Menu.menu_categories)
+                selectinload(self.model.menu_categories)
                 .selectinload(MenuCategory.subcategories)
                 .selectinload(MenuCategory.menu_items),
-
-                selectinload(Menu.menu_categories)
+                selectinload(self.model.menu_categories)
                 .selectinload(MenuCategory.menu_items),
 
                 # Only load uncategorized items at menu level
@@ -33,6 +30,8 @@ class MenuRepository(BaseRepo):
                     )
                 ),
             )
+            .where(self.model.id == uuid)
+            .where(self.model.restaurant_id == restaurant_id)
         )
 
         return result

@@ -1,10 +1,13 @@
-from app.services import AuthService
-from app.core.dependencies import get_db
-from app.core.security import SecurityInstance
-from app.helper import set_auth_cookies,clear_auth_cookies
+from pydantic import BaseModel
 
+from ...dependencies import get_authenticated_user
+from ...model import User
+from ...services import AuthService
+from ...core.dependencies import get_db
+from ...core.security import SecurityInstance
+from ...helper import set_auth_cookies,clear_auth_cookies
+from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse, UsersResponseV2
 
-from app.schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse,UserResponse
 from fastapi import APIRouter, Depends,Request,Response,Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -46,6 +49,9 @@ async def refresh( response: Response,request : Request,
         token_data = await auth.refresh_tokens(refresh_token, payload)
         # return token_data
         token_response = Tokens(**token_data)
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("TOKEN", token_data)
         set_auth_cookies(
             response,
             access_token=token_data['access_token'],
@@ -62,14 +68,9 @@ async def refresh( response: Response,request : Request,
     )
 
 @router.get("/me",response_model=UserHttpResponse)
-async def me(request: Request,response:Response,db: AsyncSession = Depends(get_db)):
-
-    auth = AuthService(db,response,request.state.device_info)
-
-    payload = SecurityInstance.token_validation(request)
-    user = await auth.me(payload)
+async def me( auth_user: User = Depends(get_authenticated_user)):
 
     return UserHttpResponse(
         success=True,
-        data=user
+        data=UsersResponseV2.model_validate(auth_user, from_attributes=True)
     )
