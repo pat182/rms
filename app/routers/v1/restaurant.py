@@ -61,7 +61,7 @@ async def toggle_status(
 
 
 
-@router.post("/", response_model=CreateRestaurantResponse)
+@router.post("", response_model=CreateRestaurantResponse)
 async def create_restaurant(
         payload: CreateRestaurantRequest,
         auth_user: User = Depends(get_authenticated_user),
