@@ -1,17 +1,20 @@
-from app.core.dependencies import get_db
-from app.dependencies.menu_dependencies.menu_dependecies import get_menu_item_service
-from app.schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
-from app.schemas.menu.menu_item_schema import MenuItemResponse
-from app.services.menu.menu_item_service import MenuItemService
-from app.services import FileStorageService
-from app.model.repositories import MenuItemRepository
+from ...core import dependencies
+from ...core.dependencies import get_db
+from ...dependencies import (get_menu_item_service,get_authenticated_user)
+from ...model import User
+from ...schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
+from ...schemas.menu.menu_item_schema import MenuItemResponse
+from ...services.menu.menu_item_service import MenuItemService
+from ...services import FileStorageService
+from ...model.repositories import MenuItemRepository
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, File,Depends, UploadFile,HTTPException,Request
 
 router = APIRouter(
     prefix="/v1/menus/{menu_id}/menu-items",
-    tags=["Menu Items"]
+    tags=["Menu Items"],
+    dependencies=[Depends(get_authenticated_user)]
 )
 
 @router.post("/",response_model=CreateMenuItemResponse)
@@ -19,29 +22,43 @@ async def create_menu_item(
     menu_id: int,
     payload: list[CreateMenuItemRequest],
     db: AsyncSession = Depends(get_db),
+    auth_user: User = Depends(get_authenticated_user),
     item_service: MenuItemService = Depends(get_menu_item_service)
 ):
 
     try:
-        async with db.begin():
-            new_item = await item_service.create_menu_items(
-                menu_id,
-                payload,
-            )
-            return CreateMenuItemResponse(
-                success=True,
-                data=new_item
-            )
+        new_item = await item_service.create_menu_items(
+            menu_id,
+            payload,
+            auth_user.restaurants[0].id
+        )
+        await db.commit()
+        return CreateMenuItemResponse(
+            success=True,
+            data=new_item
+        )
+    except HTTPException:
+        await db.rollback()
+        raise
     except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create Menu Item",
+        )
         raise
 
 
 
 @router.post("/{menu_item_id}/menu-item-image")
-async def upload_menu_item_image(menu_item_id: int,file: UploadFile = File(...),db: AsyncSession = Depends(get_db)):
+async def upload_menu_item_image(
+        menu_item_id: int,
+        auth_user: User = Depends(get_authenticated_user),
+        file: UploadFile = File(...),db: AsyncSession = Depends(get_db)
+):
     file_storage_service = FileStorageService()
     menu_item_repo = MenuItemRepository(db)
-    menu_item = await menu_item_repo.get_by_id(menu_item_id)
+    menu_item = await menu_item_repo.get_item(menu_item_id,auth_user.restaurants[0].id)
 
     if menu_item is None:
         raise HTTPException(
@@ -66,10 +83,13 @@ async def upload_menu_item_image(menu_item_id: int,file: UploadFile = File(...),
         try:
             await file_storage_service.delete_image(new_image_url)
         except Exception:
-            # Log cleanup failure in production.
+            #log
             pass
 
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to upload menu item image",
+        )
 
     if old_image_url and old_image_url != new_image_url:
         try:
@@ -87,9 +107,9 @@ async def upload_menu_item_image(menu_item_id: int,file: UploadFile = File(...),
 
 @router.delete("/{menu_item_id}/menu-item-image",response_model=MenuItemResponse)
 async def delete_menu_item_image(
-    menu_id:int,
     menu_item_id: int,
     request: Request,
+    auth_user: User = Depends(get_authenticated_user),
     db: AsyncSession = Depends(get_db),
     item_service: MenuItemService = Depends(get_menu_item_service),
 
@@ -97,15 +117,17 @@ async def delete_menu_item_image(
     try:
         body = await request.json()
         image_url = body.get("image_url")
-        async with db.begin():
-            menu_item = await item_service.delete_item_image(menu_id, menu_item_id,image_url)
-            return MenuItemResponse(
-                success=True,
-                data=menu_item,
-            )
+        menu_item = await item_service.delete_item_image(menu_item_id,auth_user.restaurants[0].id,image_url)
+        await db.commit()
+        return MenuItemResponse(
+            success=True,
+            data=menu_item,
+        )
     except HTTPException:
+        await db.rollback()
         raise
     except Exception:
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Failed to delete menu item image",
