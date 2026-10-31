@@ -176,12 +176,12 @@ async def update_complete(
         await db.rollback()
         raise
 
-    # except Exception:
-    #     await db.rollback()
-    #     raise HTTPException(
-    #         status_code=500,
-    #         detail="Failed to update menu",
-    #     )
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update menu",
+        )
 
 
 
