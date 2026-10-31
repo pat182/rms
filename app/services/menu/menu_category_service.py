@@ -7,7 +7,7 @@ from ...schemas import (
     CreateCompleteMenuCategoryRequest, MenuItemDataWithClientID,UpdateCompleteMenuCategoryRequest,
     MenuCategoryData
 )
-from ...model.repositories import MenuCategoryRepository
+from ...model.repositories import MenuCategoryRepository,MenuRepository
 
 from .menu_item_service import MenuItemService
 from sqlalchemy import func, select
@@ -28,11 +28,14 @@ class MenuCategoryService:
             menu_id: int,
             payload: list[CreateCompleteMenuCategoryRequest],
             item_service: MenuItemService,
+            auth_restaurant_id : int
     ):
+        menu_repo = MenuRepository(self.db)
         # 1. Validate that the menu exists
-        menu = await self.db.scalar(
-            select(Menu.id).where(Menu.id == menu_id)
-        )
+        menu = await menu_repo.get_by_id(menu_id,auth_restaurant_id)
+        # menu = await self.db.scalar(
+        #     select(Menu.id).where(Menu.id == menu_id)
+        # )
 
         if menu is None:
             raise HTTPException(
@@ -49,7 +52,7 @@ class MenuCategoryService:
                 self.model.parent_id,
                 func.max(self.model.sort_order),
             )
-            .where(self.model.menu_id == menu_id)
+            .where(self.model.menu_id == menu.id)
             .group_by(self.model.parent_id)
         )
 
@@ -143,11 +146,15 @@ class MenuCategoryService:
 
         # 6. Insert all category/subcategory items in one service call
         inserted_items = []
-
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("MENU:", menu)
+        # log_info("==================================")
         if nested_items_payload:
             inserted_items = await item_service.create_menu_items(
                 menu_id,
                 nested_items_payload,
+                auth_restaurant_id
             )
 
         # Group items by category ID, retaining each item's client_id

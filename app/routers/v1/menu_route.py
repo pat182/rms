@@ -94,7 +94,7 @@ async def update_status(
             )
 
 
-@router.post("/", response_model=CreateMenuResponse)
+@router.post("", response_model=CreateMenuResponse)
 async def create_menu(
         payload: CreateMenuRequest,
         auth_user: User = Depends(get_authenticated_user),

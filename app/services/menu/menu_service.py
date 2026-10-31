@@ -116,6 +116,7 @@ class MenuService:
                 new_menu.id,
                 payload.categories,
                 item_service,
+                auth_restaurant_id
             )
         return CompleteMenuData(
             **MenuData.model_validate(new_menu).model_dump(),
