@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class BaseRepo(ABC):
@@ -66,20 +67,25 @@ class BaseRepo(ABC):
         return result
 
     async def filter(
-        self,
-        page: int,
-        page_size: int,
-        sort_by: str | None,
-        sort_order: str | None,
-        search: str | None,
-        restaurant_id: int | None = None,
+            self,
+            page: int,
+            page_size: int,
+            sort_by: str | None,
+            sort_order: str | None,
+            search: str | None,
+            restaurant_id: int | None = None,
+            relationships: list | None = None,
     ):
         page = max(1, page)
         page_size = min(max(1, page_size), 100)
 
         stmt = select(self.model)
 
-        # Scope queries to the current restaurant when supported.
+        if relationships:
+            stmt = stmt.options(
+                *[selectinload(rel) for rel in relationships]
+            )
+
         if hasattr(self.model, "restaurant_id"):
             stmt = stmt.where(
                 self.model.restaurant_id == restaurant_id

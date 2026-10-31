@@ -1,7 +1,9 @@
 from datetime import datetime
 
-from app.core.base_schema import BaseSchema
-from pydantic import EmailStr
+from pydantic import EmailStr, ConfigDict
+
+from ...core.base_schema import BaseSchema
+from ...schemas.country.country_schema import CountryData
 
 class RestaurantStatusRequest(BaseSchema):
     is_active: bool
@@ -21,11 +23,11 @@ class RestaurantData(BaseSchema):
     address: str
     email: str | None = None
     is_active: bool
+    country: CountryData
     created_at: datetime
     updated_at: datetime
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = ConfigDict(from_attributes=True)
+
 
 class CreateRestaurantResponse(BaseSchema):
     success: bool

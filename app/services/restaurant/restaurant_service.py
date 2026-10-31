@@ -1,9 +1,8 @@
 from ...model import (User,Restaurant,Country)
 from ...model.repositories import RestaurantRepository
-from ...schemas.restaurant_schema import CreateRestaurantRequest
+from app.schemas.restaurant.restaurant_schema import CreateRestaurantRequest
 
 from fastapi import HTTPException
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 class RestaurantService:
