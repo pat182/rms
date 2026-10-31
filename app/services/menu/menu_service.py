@@ -72,7 +72,7 @@ class MenuService:
             )
 
         menu = self.repo.model(
-            restaurant_id=1,
+            restaurant_id=restaurant_id,
             menu_name=payload.menu_name,
             description=payload.description or None,
             is_active=payload.is_active or False

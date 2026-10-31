@@ -94,6 +94,9 @@ def client(
     app.dependency_overrides[get_menu_category_service] = lambda: category_service
 
     with TestClient(app) as test_client:
+        test_client.headers.update({
+            "X-RESTAURANT-ID": "1"
+        })
         yield test_client
 
     app.dependency_overrides.clear()
