@@ -13,7 +13,7 @@ class Restaurant(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
-
+    
     country_id: Mapped[int] = mapped_column(
         ForeignKey("countries.id"),
         nullable=False

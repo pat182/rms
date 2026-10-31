@@ -1,7 +1,9 @@
-from ...core import dependencies
 from ...core.dependencies import get_db
-from ...dependencies import (get_menu_item_service,get_authenticated_user)
-from ...model import User
+from ...dependencies import (
+    get_authenticated_user,get_menu_item_service,
+    get_current_restaurant
+)
+from ...model import User, Restaurant
 from ...schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
 from ...schemas.menu.menu_item_schema import MenuItemResponse
 from ...services.menu.menu_item_service import MenuItemService
@@ -22,7 +24,7 @@ async def create_menu_item(
     menu_id: int,
     payload: list[CreateMenuItemRequest],
     db: AsyncSession = Depends(get_db),
-    auth_user: User = Depends(get_authenticated_user),
+    restaurant: Restaurant = Depends(get_current_restaurant),
     item_service: MenuItemService = Depends(get_menu_item_service)
 ):
 
@@ -30,7 +32,7 @@ async def create_menu_item(
         new_item = await item_service.create_menu_items(
             menu_id,
             payload,
-            auth_user.restaurants[0].id
+            restaurant.id
         )
         await db.commit()
         return CreateMenuItemResponse(
@@ -46,19 +48,18 @@ async def create_menu_item(
             status_code=500,
             detail="Failed to create Menu Item",
         )
-        raise
 
 
 
 @router.post("/{menu_item_id}/menu-item-image")
 async def upload_menu_item_image(
         menu_item_id: int,
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
         file: UploadFile = File(...),db: AsyncSession = Depends(get_db)
 ):
     file_storage_service = FileStorageService()
     menu_item_repo = MenuItemRepository(db)
-    menu_item = await menu_item_repo.get_item(menu_item_id,auth_user.restaurants[0].id)
+    menu_item = await menu_item_repo.get_item(menu_item_id,restaurant.id)
 
     if menu_item is None:
         raise HTTPException(
@@ -71,7 +72,7 @@ async def upload_menu_item_image(
     new_image_url = await file_storage_service.save_image(
         file=file,
         # folder=f"{auth_user.restaurants[0].id}-{auth_user.restaurants[0].restaurant_name}-menu-items",
-        folder=f"restaurant-{auth_user.restaurants[0].id}-menu-items"
+        folder=f"restaurant-{restaurant.id}-menu-items"
     )
     try:
         menu_item.image_url = new_image_url
@@ -109,7 +110,7 @@ async def upload_menu_item_image(
 async def delete_menu_item_image(
     menu_item_id: int,
     request: Request,
-    auth_user: User = Depends(get_authenticated_user),
+    restaurant: Restaurant = Depends(get_current_restaurant),
     db: AsyncSession = Depends(get_db),
     item_service: MenuItemService = Depends(get_menu_item_service),
 
@@ -117,7 +118,7 @@ async def delete_menu_item_image(
     try:
         body = await request.json()
         image_url = body.get("image_url")
-        menu_item = await item_service.delete_item_image(menu_item_id,auth_user.restaurants[0].id,image_url)
+        menu_item = await item_service.delete_item_image(menu_item_id,restaurant.id,image_url)
         await db.commit()
         return MenuItemResponse(
             success=True,
