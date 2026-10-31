@@ -195,7 +195,10 @@ class MenuItemService:
                 status_code=404,
                 detail=f"Menu item with ID {item_id} not found",
             )
-
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("IMAGE_URL:", image_url)
+        # log_info("==================================")
         if image_url:
             menu_item.image_url = None
             await fss.delete_image(image_url)
