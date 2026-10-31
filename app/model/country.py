@@ -1,6 +1,8 @@
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
+
 from app.core.database import Base
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column,relationship
 
 class Country(Base):
     __tablename__ = 'countries'
@@ -19,7 +21,10 @@ class Country(Base):
         unique=True,
         nullable=False
     )
-
+    restaurants: Mapped[list["Restaurant"]] = relationship(
+        "Restaurant",
+        back_populates="country"
+    )
     phone_code: Mapped[str] = mapped_column(
         String(7),
         nullable=False

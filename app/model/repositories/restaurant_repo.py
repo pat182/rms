@@ -4,6 +4,9 @@ from app.model import Menu, Restaurant, RestaurantUser
 from sqlalchemy import select
 
 class RestaurantRepository(BaseRepo):
+    SEARCH_FIELDS = ("restaurant_name",)
+    SORT_FIELDS = ("restaurant_name", "created_at", "updated_at")
+
     @property
     def model(self):
         return Restaurant

@@ -37,7 +37,7 @@ class RestaurantUser(Base):
         nullable=False
     )
 
-    restaurant: Mapped["Restaurant"] = relationship(
+    restaurants: Mapped["Restaurant"] = relationship(
         "Restaurant",
         back_populates="restaurant_users"
     )

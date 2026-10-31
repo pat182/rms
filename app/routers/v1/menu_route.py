@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import Literal, Optional
 
 from ...core.dependencies import get_db
@@ -12,7 +11,7 @@ from ...schemas import (
     CreateMenuResponse,PaginatedResponse, MenuData, CreateCompleteMenuRequest, CreateCompleteMenuResponse,
     UpdateMenuStatusRequest
 )
-from ...model.repositories import MenuRepository,UserRepository
+from ...model.repositories import MenuRepository
 from ...schemas.menu.menu_schema_v2 import UpdateCompleteMenuRequest
 from ...services import MenuService,MenuItemService,MenuCategoryService,FileStorageService
 
@@ -39,12 +38,7 @@ async def index(
 ):
     menu_repo = MenuRepository(db)
 
-
-
     menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search,restaurant.id)
-    from app.core.logger import log_info
-    log_info("=============================")
-    log_info("Fetching resto...", menu)
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=menu)
 
 @router.get("/{menu_id}",response_model=MenuResponse)
@@ -135,9 +129,6 @@ async def create_menu_complete(
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
-    from app.core.logger import log_info
-    log_info("=============================")
-    log_info("Fetching resto...", restaurant.__dict__)
     try:
 
         menu = await menu_service.create_complete_menu(payload,item_service,category_service,restaurant.id)

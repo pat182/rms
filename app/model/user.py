@@ -65,10 +65,10 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
-    @property
-    def restaurants(self):
-        return [
-            ru.restaurant
-            for ru in self.restaurant_users
-            if ru.restaurant
-        ]
+    # @property
+    # def restaurants(self):
+    #     return [
+    #         ru.restaurant
+    #         for ru in self.restaurant_users
+    #         if ru.restaurant
+    #     ]

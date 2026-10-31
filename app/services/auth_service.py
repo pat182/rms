@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import SecurityInstance
 from app.model.repositories import UserRepository
-from app.model import UserRefreshToken,User,RestaurantUser
+from app.model import UserRefreshToken, User, RestaurantUser, Restaurant
 from app.helper import clear_auth_cookies
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,7 +73,22 @@ class AuthService:
             "r_expires_in": int(refresh_token_expires.total_seconds()),
             "r_expires_at": f"{r_expires_at} UTC",
             "csrf_token": csrf_token,
-            "user": user
+            "user": {
+                "id" : user.id,
+                "role_id" : user.role_id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+                "role": user.role,
+                "restaurants" : [
+                    ru.restaurants
+                    for ru in user.restaurant_users
+                    if ru.restaurants
+                ]
+
+            }
         }
 
     async def refresh_tokens(self, refresh_token: str,payload : dict):
@@ -111,7 +126,8 @@ class AuthService:
             .options(
                 selectinload(User.role),
                 selectinload(User.restaurant_users)
-                .selectinload(RestaurantUser.restaurant)
+                .selectinload(RestaurantUser.restaurants)
+                .selectinload(Restaurant.country)
             )
             .where(User.id == int(payload['sub']) )
         )
@@ -165,7 +181,22 @@ class AuthService:
             'refresh_token': new_refresh_token,
             "r_expires_in": int((refresh_expires_at - datetime.now(timezone.utc)).total_seconds()),
             "r_expires_at": f"{refresh_expires_at} UTC",
-            "user": user
+            "user": {
+                "id" : user.id,
+                "role_id" : user.role_id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at,
+                "role": user.role,
+                "restaurants" : [
+                    ru.restaurants
+                    for ru in user.restaurant_users
+                    if ru.restaurants
+                ]
+
+            }
         }
 
     async def me(self, payload:dict):

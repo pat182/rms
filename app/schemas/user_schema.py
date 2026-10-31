@@ -1,7 +1,7 @@
 
 from datetime import datetime
 from app.core.base_schema import BaseSchema
-from app.schemas.restaurant_schema import RestaurantData
+from app.schemas.restaurant.restaurant_schema import RestaurantData
 from app.schemas.role_schema import RoleData
 
 from pydantic import ConfigDict

@@ -63,8 +63,13 @@ class Restaurant(Base):
         "Menu",
         back_populates="restaurant"
     )
+    country: Mapped["Country"] = relationship(
+        "Country",
+        back_populates="restaurants"
+    )
+
     restaurant_users: Mapped[list["RestaurantUser"]] = relationship(
         "RestaurantUser",
-        back_populates="restaurant",
+        back_populates="restaurants",
         cascade="all, delete-orphan"
     )
