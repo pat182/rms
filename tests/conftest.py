@@ -57,8 +57,11 @@ def auth_user():
         last_name="User",
         created_at=now,
         updated_at=now,
-        restaurants=[
-            SimpleNamespace(id=1)
+        restaurant_users=[
+            SimpleNamespace(
+                restaurant_id=1,
+                restaurants=SimpleNamespace(id=1),
+            )
         ],
     )
 
