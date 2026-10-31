@@ -94,7 +94,7 @@ async def update_status(
             )
 
 
-@router.post("/", response_model=CreateMenuResponse)
+@router.post("", response_model=CreateMenuResponse)
 async def create_menu(
         payload: CreateMenuRequest,
         auth_user: User = Depends(get_authenticated_user),
@@ -178,12 +178,12 @@ async def update_complete(
         await db.rollback()
         raise
 
-    except Exception:
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to update menu",
-        )
+    # except Exception:
+    #     await db.rollback()
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail="Failed to update menu",
+    #     )
 
 
 
