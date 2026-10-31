@@ -6,7 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column,relationship
 
 from app.model.menu_item import MenuItem
 
-
 class Menu(Base):
     __tablename__ = "menus"
     __mapper_args__ = {"eager_defaults": True}

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column,relationship
 
 class MenuCategory(Base):
     __tablename__ = 'menu_categories'
-
+    __mapper_args__ = {"eager_defaults": True}
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
