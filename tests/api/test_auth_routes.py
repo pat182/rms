@@ -39,6 +39,12 @@ def test_login_success(client):
                     "address": "Test Address",
                     "email": "restaurant@example.com",
                     "is_active": True,
+                    "country": {
+                        "id": 1,
+                        "country_name": "philippines",
+                        "country_code": "ph",
+                        "phone_code": "+63"
+                    },
                     "created_at": now,
                     "updated_at": now,
                 }

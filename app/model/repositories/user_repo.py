@@ -1,5 +1,5 @@
-from app.core.base_repo import BaseRepo
-from app.model import User,RestaurantUser
+from ...core.base_repo import BaseRepo
+from ...model import User, RestaurantUser, Restaurant
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -15,7 +15,9 @@ class UserRepository(BaseRepo):
             .options(
                 selectinload(User.role),
                 selectinload(User.restaurant_users)
-                .selectinload(RestaurantUser.restaurant)
+                .selectinload(RestaurantUser.restaurants)
+                .selectinload(Restaurant.country)
+
             )
             .where(User.email == email)
         )
@@ -28,7 +30,7 @@ class UserRepository(BaseRepo):
             .options(
                 selectinload(self.model.role),
                 selectinload(self.model.restaurant_users)
-                .selectinload(RestaurantUser.restaurant)
+                .selectinload(RestaurantUser.restaurants)
             )
             .where(self.model.id == _id)
         )

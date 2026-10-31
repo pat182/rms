@@ -1,10 +1,19 @@
+from typing import Literal, Optional
+
 from ...dependencies import get_authenticated_user
-from ...model import User
-from ...schemas import (CreateRestaurantRequest,CreateRestaurantResponse,RestaurantStatusRequest)
+from ...model import User, Restaurant
+from ...schemas import (
+    CreateRestaurantRequest,
+    CreateRestaurantResponse,
+    RestaurantStatusRequest,
+    PaginatedResponse,
+    RestaurantData
+)
 from ...services.restaurant.restaurant_service import RestaurantService
+from ...model.repositories import RestaurantRepository
 from ...core.dependencies import get_db
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -13,6 +22,23 @@ router = APIRouter(
     tags=["Restaurants"],
     dependencies=[Depends(get_authenticated_user)],
 )
+@router.get("",response_model=PaginatedResponse[RestaurantData])
+async def index(
+    page:int=Query(1,ge=1),
+    page_size:int=Query(25,ge=1),
+    db: AsyncSession = Depends(get_db),
+    sort_by: Optional[Literal["restaurant_name", "created_at", "updated_at"]] = Query(None),
+    sort_order: Optional[Literal["asc", "desc"]] = Query(None),
+    search: Optional[str] = Query(None),
+
+):
+    resto_repo = RestaurantRepository(db)
+
+    restaurants, total = await resto_repo.filter(page, page_size, sort_by, sort_order, search,relationships=[
+        Restaurant.country,
+    ])
+    return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=restaurants)
+
 
 @router.get("/{restaurant_id}",response_model=CreateRestaurantResponse)
 async def show(

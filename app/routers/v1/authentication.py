@@ -31,7 +31,6 @@ async def login(response: Response,request:Request, body: LoginRequest,db: Async
         access_exp=token_data['expires_in'],
         refresh_exp=token_data['r_expires_in'],
     )
-
     return TokenResponse(
         token=Tokens(**token_data),
         csrf=token_data['csrf_token'],
