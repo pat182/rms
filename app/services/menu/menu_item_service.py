@@ -189,9 +189,6 @@ class MenuItemService:
         fss = FileStorageService()
 
         menu_item = await MenuItemRepository(self.db).get_item(item_id,restaurant_id)
-        # from app.core.logger import log_info
-        # log_info("==================================")
-        # log_info("MENU _ ITEM:", menu_item.id)
 
         if not menu_item:
             raise HTTPException(
@@ -207,6 +204,7 @@ class MenuItemService:
         return MenuItemData.model_validate(
             menu_item, from_attributes=True
         )
+
 
 
 

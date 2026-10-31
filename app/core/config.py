@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     JWT_MINUTES: int
     JWT_REFRESH_DAYS: int
 
+    SUPABASE_URL: str
+    SUPABASE_SERVICE_ROLE_KEY:str
+    SUPABASE_STORAGE_BUCKET:str
+
     DUMMY_USER_PASS:str
     model_config = SettingsConfigDict(
         env_file=".env",
