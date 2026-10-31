@@ -3,9 +3,9 @@ from typing import Literal, Optional
 
 from ...core.dependencies import get_db
 from ...dependencies import (
-    get_authenticated_user,get_menu_service, get_menu_item_service, get_menu_category_service
+    get_authenticated_user,get_menu_service, get_menu_item_service, get_menu_category_service,get_current_restaurant
 )
-from ...model import User
+from ...model import User, Restaurant
 from ...schemas import (
     MenuResponse,
     CreateMenuRequest,
@@ -29,7 +29,7 @@ router = APIRouter(
 
 @router.get("",response_model=PaginatedResponse[MenuData])
 async def index(
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
         page:int=Query(1,ge=1),
         page_size:int=Query(25,ge=1),
         db: AsyncSession = Depends(get_db),
@@ -39,18 +39,22 @@ async def index(
 ):
     menu_repo = MenuRepository(db)
 
-    menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search,auth_user.restaurants[0].id)
 
+
+    menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search,restaurant.id)
+    from app.core.logger import log_info
+    log_info("=============================")
+    log_info("Fetching resto...", menu)
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=menu)
 
 @router.get("/{menu_id}",response_model=MenuResponse)
 async def get_menu(
         menu_id:int ,
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
         menu_service: MenuService = Depends(get_menu_service)
 ):
     try:
-        menu = await menu_service.get_menu(menu_id,auth_user.restaurants[0].id)
+        menu = await menu_service.get_menu(menu_id,restaurant.id)
         return MenuResponse(
             success=True,
             data=menu
@@ -70,13 +74,12 @@ async def update_status(
         payload: UpdateMenuStatusRequest,
         db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service),
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
 ):
 
         try:
 
-            data = await menu_service.update_status(menu_id,payload.is_active,
-                                                        auth_user.restaurants[0].id)
+            data = await menu_service.update_status(menu_id,payload.is_active,restaurant.id)
             await db.commit()
             return CreateMenuResponse(
                 success=True,
@@ -99,12 +102,13 @@ async def create_menu(
         payload: CreateMenuRequest,
         auth_user: User = Depends(get_authenticated_user),
         db: AsyncSession = Depends(get_db),
-        menu_service: MenuService = Depends(get_menu_service)
+        menu_service: MenuService = Depends(get_menu_service),
+        restaurant: Restaurant = Depends(get_current_restaurant)
 ):
 
     try:
 
-        new_menu = await menu_service.create_menu(payload,auth_user.restaurants[0].id)
+        new_menu = await menu_service.create_menu(payload,restaurant.id)
         await db.commit()
         return {
             "success": True,
@@ -125,15 +129,18 @@ async def create_menu(
 @router.post("/complete", response_model=CreateCompleteMenuResponse)
 async def create_menu_complete(
         payload: CreateCompleteMenuRequest,
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
         menu_service: MenuService = Depends(get_menu_service),
         db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
+    from app.core.logger import log_info
+    log_info("=============================")
+    log_info("Fetching resto...", restaurant.__dict__)
     try:
 
-        menu = await menu_service.create_complete_menu(payload,item_service,category_service,auth_user.restaurants[0].id)
+        menu = await menu_service.create_complete_menu(payload,item_service,category_service,restaurant.id)
         await db.commit()
         return CreateCompleteMenuResponse(
                 success=True,
@@ -156,7 +163,7 @@ async def update_complete(
         menu_id: int,
         payload : UpdateCompleteMenuRequest,
         menu_service: MenuService = Depends(get_menu_service),
-        auth_user: User = Depends(get_authenticated_user),
+        restaurant: Restaurant = Depends(get_current_restaurant),
         db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
@@ -164,7 +171,7 @@ async def update_complete(
     fss = FileStorageService()
 
     try:
-        menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service,auth_user.restaurants[0].id)
+        menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service,restaurant.id)
 
         await db.commit()
         for image_path in menu.removed_image:
