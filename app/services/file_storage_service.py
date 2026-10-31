@@ -100,11 +100,14 @@
 
 from uuid import uuid4
 import asyncio
+from urllib.parse import urlparse, unquote
+
+from ..core.config import settings
 
 from fastapi import HTTPException, UploadFile
 from supabase import create_client
 
-from app.core.config import settings
+
 
 
 class FileStorageService:
@@ -196,8 +199,24 @@ class FileStorageService:
         if not image_url:
             return
 
+        parsed_url = urlparse(image_url)
+
+        prefix = f"/storage/v1/object/public/{self.bucket}/"
+
+        if not parsed_url.path.startswith(prefix):
+            return
+
+        storage_path = unquote(parsed_url.path.removeprefix(prefix))
+
+        if not storage_path or ".." in storage_path.split("/"):
+            return
+
+        # from app.core.logger import log_info
+        # log_info("==================================")
+        # log_info("FSS IMAGE_URL:", storage_path)
+        # log_info("==================================")
         await asyncio.to_thread(
             lambda: self.client.storage
             .from_(self.bucket)
-            .remove([image_url])
+            .remove([storage_path])
         )
