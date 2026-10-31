@@ -70,9 +70,9 @@ async def upload_menu_item_image(
     # Save the new image first.
     new_image_url = await file_storage_service.save_image(
         file=file,
-        folder="1-creepy-restaurant-menu-items",
+        # folder=f"{auth_user.restaurants[0].id}-{auth_user.restaurants[0].restaurant_name}-menu-items",
+        folder=f"restaurant-{auth_user.restaurants[0].id}-menu-items"
     )
-
     try:
         menu_item.image_url = new_image_url
         await menu_item_repo.db.commit()

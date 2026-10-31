@@ -20,4 +20,5 @@ dependencies = [
     "pytest-asyncio>=1.4.0",
     "python-multipart>=0.0.32",
     "sqlalchemy==2.1.6",
+    "supabase>=2.33.0",
 ]

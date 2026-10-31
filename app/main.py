@@ -13,16 +13,16 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 setup_logging()
-BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOADS_DIR = BASE_DIR / "uploads"
-
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-
-app.mount(
-    "/uploads",
-    StaticFiles(directory=UPLOADS_DIR),
-    name="uploads",
-)
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# UPLOADS_DIR = BASE_DIR / "uploads"
+#
+# UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+#
+# app.mount(
+#     "/uploads",
+#     StaticFiles(directory=UPLOADS_DIR),
+#     name="uploads",
+# )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173","http://127.0.0.1:5173","https://pat-rms.vercel.app"],
