@@ -13,7 +13,7 @@ from ...schemas import (
 )
 from ...model.repositories import MenuRepository
 from ...schemas.menu.menu_schema_v2 import UpdateCompleteMenuRequest
-from ...services import MenuService,MenuItemService,MenuCategoryService,FileStorageService
+from ...services import MenuService,MenuItemService,MenuCategoryService,get_file_storage_service
 
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -159,7 +159,7 @@ async def update_complete(
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)
 ):
-    fss = FileStorageService()
+    fss = get_file_storage_service()
 
     try:
         menu = await menu_service.update_complete_menu(menu_id,payload,item_service,category_service,restaurant.id)

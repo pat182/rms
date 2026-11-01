@@ -4,8 +4,8 @@ from ...schemas import (
     CreateMenuItemRequest,
     MenuItemData,MenuItemDataWithClientID,UpdateCompleteMenuItemRequest
 )
-from ...model import (Menu,MenuCategory)
-from ..file_storage_service import FileStorageService
+from ...model import (MenuCategory)
+from ..storage.file_storage_service import get_file_storage_service
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,func
@@ -186,7 +186,7 @@ class MenuItemService:
             restaurant_id: int,
             image_url: str | None,
     ) -> MenuItemData:
-        fss = FileStorageService()
+        fss = get_file_storage_service()
 
         menu_item = await MenuItemRepository(self.db).get_item(item_id,restaurant_id)
 
