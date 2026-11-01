@@ -7,7 +7,7 @@ from ...model import User, Restaurant
 from ...schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
 from ...schemas.menu.menu_item_schema import MenuItemResponse
 from ...services.menu.menu_item_service import MenuItemService
-from ...services import FileStorageService
+from ...services.storage import get_file_storage_service
 from ...model.repositories import MenuItemRepository
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +57,7 @@ async def upload_menu_item_image(
         restaurant: Restaurant = Depends(get_current_restaurant),
         file: UploadFile = File(...),db: AsyncSession = Depends(get_db)
 ):
-    file_storage_service = FileStorageService()
+    fss = get_file_storage_service()
     menu_item_repo = MenuItemRepository(db)
     menu_item = await menu_item_repo.get_item(menu_item_id,restaurant.id)
 
@@ -69,9 +69,8 @@ async def upload_menu_item_image(
     # Preserve the old image URL.
     old_image_url = menu_item.image_url
     # Save the new image first.
-    new_image_url = await file_storage_service.save_image(
+    new_image_url = await fss.save_image(
         file=file,
-        # folder=f"{auth_user.restaurants[0].id}-{auth_user.restaurants[0].restaurant_name}-menu-items",
         folder=f"restaurant-{restaurant.id}-menu-items"
     )
     try:
@@ -82,7 +81,7 @@ async def upload_menu_item_image(
         await menu_item_repo.db.rollback()
 
         try:
-            await file_storage_service.delete_image(new_image_url)
+            await fss.delete_image(new_image_url)
         except Exception:
             #log
             pass
@@ -94,7 +93,7 @@ async def upload_menu_item_image(
 
     if old_image_url and old_image_url != new_image_url:
         try:
-            await file_storage_service.delete_image(old_image_url)
+            await fss.delete_image(old_image_url)
         except Exception:
             # Log this failure
             pass
