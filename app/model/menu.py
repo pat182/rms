@@ -55,7 +55,7 @@ class Menu(Base):
         "MenuCategory",
         back_populates="menu",
         cascade="all, delete-orphan",
-        order_by=MenuItem.sort_order.asc(),
+        order_by="MenuCategory.sort_order.asc()",
     )
 
     menu_items: Mapped[list["MenuItem"]] = relationship(
