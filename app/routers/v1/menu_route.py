@@ -13,7 +13,8 @@ from ...schemas import (
 )
 from ...model.repositories import MenuRepository
 from ...schemas.menu.menu_schema_v2 import UpdateCompleteMenuRequest
-from ...services import MenuService,MenuItemService,MenuCategoryService,get_file_storage_service
+from ...services import MenuService,MenuItemService,MenuCategoryService
+from ...services.storage import get_file_storage_service
 
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -94,7 +95,6 @@ async def update_status(
 @router.post("", response_model=CreateMenuResponse)
 async def create_menu(
         payload: CreateMenuRequest,
-        auth_user: User = Depends(get_authenticated_user),
         db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service),
         restaurant: Restaurant = Depends(get_current_restaurant)

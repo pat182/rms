@@ -1,7 +1,15 @@
 from pathlib import Path
 from app.core.config import settings
-from app.routers.v1 import (restaurant_router,menu_router,menu_category_router,menu_item_router,authentication_router)
-from app.routers.test import router as test_router
+from app.routers.v1 import (
+    restaurant_router,
+    menu_router,menu_category_router,
+    menu_item_router,
+    authentication_router,
+    restaurant_table_router
+)
+from app.routers.customer_interface import (customer_menu_router)
+from app.routers.ws_route import router as websocket_router
+
 from app.core.logger_config import setup_logging
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +21,7 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 setup_logging()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 
@@ -23,6 +32,7 @@ app.mount(
     StaticFiles(directory=UPLOADS_DIR),
     name="uploads",
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173","http://127.0.0.1:5173","https://pat-rms.vercel.app"],
@@ -30,14 +40,17 @@ app.add_middleware(
     allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
     allow_headers=["Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID"],
 )
-
-app.include_router(test_router)
-
+#=============WEB SOCKET=============
+app.include_router(websocket_router)
+#=============ADMIN INTERFACE=============
 app.include_router(authentication_router)
 app.include_router(restaurant_router)
 app.include_router(menu_router)
 app.include_router(menu_category_router)
 app.include_router(menu_item_router)
+app.include_router(restaurant_table_router)
+#=============CUSTOMER INTERFACE=============
+app.include_router(customer_menu_router)
 
 
 @app.middleware("http")

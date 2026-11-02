@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class RestaurantService:
     def __init__(self,db: AsyncSession):
         self.db = db
-        self.model = Restaurant
         self.repo = RestaurantRepository(self.db)
+        self.model = self.repo.model
 
     async def get_restaurant(self,restaurant_id,auth_user:User):
 

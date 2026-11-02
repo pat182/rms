@@ -23,7 +23,10 @@ class MenuCategory(Base):
     )
 
     parent_id: Mapped[int | None] = mapped_column(
-        ForeignKey("menu_categories.id"),
+        ForeignKey(
+            "menu_categories.id",
+            ondelete = "CASCADE"
+        ),
         nullable=True
     )
 

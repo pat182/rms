@@ -2,11 +2,11 @@ from typing import Literal, Optional
 
 from ...dependencies import get_authenticated_user
 from ...model import User, Restaurant
-from ...schemas import (
+from ...schemas import PaginatedResponse
+from ...schemas.restaurant import (
     CreateRestaurantRequest,
     CreateRestaurantResponse,
     RestaurantStatusRequest,
-    PaginatedResponse,
     RestaurantData
 )
 from ...services.restaurant.restaurant_service import RestaurantService

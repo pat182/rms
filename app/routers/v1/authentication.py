@@ -1,12 +1,14 @@
 from pydantic import BaseModel
 
 from ...dependencies import get_authenticated_user
-from ...model import User
+from ...model import User, UserRefreshToken
+from ...model.repositories import UserRefreshTokenRepository
 from ...services import AuthService
 from ...core.dependencies import get_db
 from ...core.security import SecurityInstance
 from ...helper import set_auth_cookies,clear_auth_cookies
 from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse, UsersResponseV2
+
 
 from fastapi import APIRouter, Depends,Request,Response,Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,3 +75,27 @@ async def me( auth_user: User = Depends(get_authenticated_user)):
         success=True,
         data=UsersResponseV2.model_validate(auth_user, from_attributes=True)
     )
+
+@router.post("/logout")
+async def logout(
+        response: Response,
+        request: Request,
+        db: AsyncSession = Depends(get_db)
+
+):
+    refresh_token = request.cookies.get("refresh_token")
+    ref_repo = UserRefreshTokenRepository(db)
+
+    if refresh_token:
+        result = await ref_repo.get_by_refresh_token(refresh_token)
+        token = result.scalar_one()
+        if token:
+            token.revoked = True
+            await db.commit()
+
+    clear_auth_cookies(response)
+
+    return {
+        "success": True,
+        "message": "Logged out successfully",
+    }

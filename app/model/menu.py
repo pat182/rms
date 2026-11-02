@@ -55,6 +55,7 @@ class Menu(Base):
         "MenuCategory",
         back_populates="menu",
         cascade="all, delete-orphan",
+        order_by=MenuItem.sort_order.asc(),
     )
 
     menu_items: Mapped[list["MenuItem"]] = relationship(
@@ -64,10 +65,10 @@ class Menu(Base):
         order_by=MenuItem.sort_order.asc(),
     )
 
-    @property
-    def categories(self):
-        return [
-            category
-            for category in self.menu_categories
-            if category.parent_id is None
-        ]
+    # @property
+    # def categories(self):
+    #     return [
+    #         category
+    #         for category in self.menu_categories
+    #         if category.parent_id is None
+    #     ]
