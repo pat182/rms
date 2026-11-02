@@ -20,6 +20,7 @@ class MenuService:
         self.repo = MenuRepository(self.db)
 
     async def get_menu(self,menu_id:int,auth_restaurant_id:int):
+        # breakpoint()
         menu = await self.repo.modified_get_by_id(menu_id,auth_restaurant_id)
 
         if not menu:
@@ -36,7 +37,7 @@ class MenuService:
             is_active=menu.is_active,
             created_at=menu.created_at,
             updated_at=menu.updated_at,
-            categories=menu.categories,
+            categories=menu.menu_categories,
             menu_items = menu.menu_items,
         )
 
