@@ -12,29 +12,61 @@ class MenuRepository(BaseRepo):
     def model(self):
         return Menu
 
-    async def modified_get_by_id(self, uuid: str | int, restaurant_id: int):
-        result = await self.db.scalar(
+    async def modified_get_by_id(self, uuid: str | int, restaurant_id: int) ->dict | None:
+
+
+        menu = await self.db.scalar(
             select(self.model)
             .options(
-                # Load all categories, including subcategories
-                selectinload(self.model.menu_categories)
-                .selectinload(MenuCategory.subcategories)
-                .selectinload(MenuCategory.menu_items),
-                selectinload(self.model.menu_categories)
-                .selectinload(MenuCategory.menu_items),
-
-                # Only load uncategorized items at menu level
                 selectinload(
                     Menu.menu_items.and_(
                         MenuItem.menu_category_id.is_(None)
                     )
-                ),
+                )
             )
             .where(self.model.id == uuid)
             .where(self.model.restaurant_id == restaurant_id)
         )
+        # from app.core.logger import log_info
+        # log_info("============================================")
+        # # for cat in menu.menu_categories:
+        # log_info("CAT",menu.__dict__)
+        # log_info("============================================")
+        if menu is None:
+            return None
 
-        return result
+        categories = await self.get_menu_categories(menu.id)
+
+        return {
+            "id": menu.id,
+            "restaurant_id": menu.restaurant_id,
+            "menu_name": menu.menu_name,
+            "description": menu.description,
+            "is_active": menu.is_active,
+            "created_at": menu.created_at,
+            "updated_at": menu.updated_at,
+            "menu_categories": categories,
+            "menu_items": menu.menu_items,
+        }
+
+    async def get_menu_categories(self, menu_id: int):
+        stmt = (
+            select(MenuCategory)
+            .where(
+                MenuCategory.menu_id == menu_id,
+                MenuCategory.parent_id.is_(None),
+            )
+            .options(
+                selectinload(MenuCategory.menu_items),
+                selectinload(MenuCategory.subcategories).selectinload(
+                    MenuCategory.menu_items
+                ),
+            )
+            .order_by(MenuCategory.sort_order.asc())
+        )
+
+        result = await self.db.scalars(stmt)
+        return result.all()
 
     async def deactivate_other_menus(
             self,

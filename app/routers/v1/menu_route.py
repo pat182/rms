@@ -56,11 +56,11 @@ async def get_menu(
         )
     except HTTPException:
         raise
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to fetch data",
-        )
+    # except Exception:
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail="Failed to fetch data",
+    #     )
 
 
 @router.patch("/{menu_id}/status",response_model=CreateMenuResponse)
