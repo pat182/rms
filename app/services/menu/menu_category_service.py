@@ -1,9 +1,7 @@
 from collections import defaultdict
 
-from ...model.menu import Menu
 from ...model.menu_category import MenuCategory
 from ...schemas import (
-    CreateMenuCategoryRequest,
     CreateCompleteMenuCategoryRequest, MenuItemDataWithClientID,UpdateCompleteMenuCategoryRequest,
     MenuCategoryData
 )
@@ -19,8 +17,8 @@ from fastapi import HTTPException
 class MenuCategoryService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.model = MenuCategory
         self.repo = MenuCategoryRepository(db)
+        self.model = self.repo.model
 
 
     async def create_complete_menu_category(

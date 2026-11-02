@@ -21,6 +21,7 @@ def set_auth_cookies(
         # samesite="lax",
         samesite="none",
         secure=True,   # always True in production
+        # secure=False,
         max_age=access_exp,
         path="/"
     )
@@ -33,6 +34,7 @@ def set_auth_cookies(
         # samesite="lax",
         samesite="none",
         secure=True,
+        # secure=False,
         max_age=refresh_exp,
         path="/"
     )
@@ -44,6 +46,7 @@ def set_auth_cookies(
             httponly=False,
             # samesite="lax",
             samesite="none",
+            # secure=False,
             secure=True,
             max_age=refresh_exp,
             path="/"
