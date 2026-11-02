@@ -17,8 +17,8 @@ from fastapi import HTTPException
 class MenuItemService:
     def __init__(self,db: AsyncSession):
         self.db = db
-        self.model = MenuItem
         self.repo = MenuItemRepository(db)
+        self.model = self.repo.model
 
     async def create_menu_items(
             self,

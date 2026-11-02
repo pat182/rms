@@ -5,7 +5,7 @@ from typing import Optional
 
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
-from fastapi import HTTPException,Request
+from fastapi import HTTPException,Request,WebSocket, WebSocketException, status
 
 class Security:
     def __init__(
@@ -75,7 +75,6 @@ class Security:
                 detail="Both cookie and header present"
             )
         # web
-
         if cookie_token:
 
             if request.method != "GET":
@@ -129,6 +128,37 @@ class Security:
             )
         return payload
 
+    def websocket_token_validation(self, websocket: WebSocket) -> dict:
+        token = websocket.cookies.get("access_token")
+
+        if not token:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Access token required",
+            )
+
+        try:
+            payload = self.decode_token(token)
+
+        except HTTPException:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Invalid or expired access token",
+            )
+
+        if payload.get("type") != "access":
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Invalid token type",
+            )
+
+        if payload.get("client_type") != "browser":
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Invalid client type",
+            )
+
+        return payload
 
     @staticmethod
     def verify_csrf(csrf_header: str | None, csrf_cookie: str | None):

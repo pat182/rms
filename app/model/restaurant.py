@@ -1,6 +1,8 @@
+from __future__ import annotations
 from datetime import datetime
 
-from app.core.database import Base
+from ..core.database import Base
+
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -59,17 +61,23 @@ class Restaurant(Base):
         nullable=False
     )
 
-    menus: Mapped[list["Menu"]] = relationship(
+    menus: Mapped[list[Menu]] = relationship(
         "Menu",
         back_populates="restaurant"
     )
-    country: Mapped["Country"] = relationship(
+    country: Mapped[Country] = relationship(
         "Country",
         back_populates="restaurants"
     )
 
-    restaurant_users: Mapped[list["RestaurantUser"]] = relationship(
+    restaurant_users: Mapped[list[RestaurantUser]] = relationship(
         "RestaurantUser",
         back_populates="restaurants",
         cascade="all, delete-orphan"
+    )
+
+    tables: Mapped[list[RestaurantTable]] = relationship(
+        "RestaurantTable",
+        back_populates="restaurant",
+        cascade="all, delete-orphan",
     )

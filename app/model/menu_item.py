@@ -1,11 +1,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from app.core.database import Base
+from ..core.database import Base
 
 from sqlalchemy import (Boolean,DateTime,ForeignKey,Numeric,String,Text,func)
-
 from sqlalchemy.orm import (Mapped,mapped_column,relationship)
+
+
 
 
 class MenuItem(Base):
