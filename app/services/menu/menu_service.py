@@ -1,5 +1,6 @@
-from ...model.menu import Menu
+from typing import Any
 
+from ...model.menu import Menu
 from ...schemas import (
     CreateMenuRequest, MenuDataWithRelationship, CreateCompleteMenuRequest, MenuData,
     MenuItemDataWithClientID, CompleteMenuData,UpdateCompleteMenuRequest,
@@ -19,9 +20,10 @@ class MenuService:
         self.db = db
         self.repo = MenuRepository(self.db)
 
-    async def get_menu(self,menu_id:int,auth_restaurant_id:int):
+    async def get_menu(self,menu_id:int,auth_restaurant_id:int)->dict[str, Any] | None:
         # breakpoint()
         menu = await self.repo.modified_get_by_id(menu_id,auth_restaurant_id)
+
 
         if not menu:
             raise HTTPException(
@@ -30,15 +32,15 @@ class MenuService:
             )
 
         return MenuDataWithRelationship(
-            id=menu.id,
-            restaurant_id=menu.restaurant_id,
-            menu_name=menu.menu_name,
-            description=menu.description,
-            is_active=menu.is_active,
-            created_at=menu.created_at,
-            updated_at=menu.updated_at,
-            categories=menu.menu_categories,
-            menu_items = menu.menu_items,
+            id=menu['id'],
+            restaurant_id=menu['restaurant_id'],
+            menu_name=menu["menu_name"],
+            description=menu["description"],
+            is_active=menu["is_active"],
+            created_at=menu['created_at'],
+            updated_at=menu['updated_at'],
+            categories=menu['menu_categories'],
+            menu_items = menu['menu_items'],
         )
 
     async def update_status(self,menu_id:int,is_active:bool,auth_restaurant_id)->MenuData:
