@@ -47,7 +47,7 @@ async def get_or_create_dining_session(
         .where(
             DiningSession.restaurant_table_id == table.id,
             DiningSession.is_active.is_(True),
-            DiningSession.status.in_(["active", "pending"]),
+            DiningSession.status.in_(["verified", "pending"]),
         )
     )
 

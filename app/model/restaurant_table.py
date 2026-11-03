@@ -61,5 +61,6 @@ class RestaurantTable(Base):
     dining_sessions: Mapped[list["DiningSession"]] = relationship(
         back_populates="restaurant_table",
         cascade="all, delete-orphan",
+        order_by="DiningSession.started_at.asc()",
     )
 

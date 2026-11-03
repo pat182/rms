@@ -10,5 +10,8 @@ __all__ = [
     "CreateRestoTableResponse",
     "UpdateRestoTableResponse",
     "CreateSeshStatusRequest",
+    "TableWithRestoData",
+    "TableWithDinningSessionData",
+    "DiningSessionWithTableData",
 
 ]

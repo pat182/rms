@@ -1,14 +1,17 @@
-from pygments.lexers import data
+# from pygments.lexers import data
+from typing import Optional, Literal
 
 from ...core.dependencies import get_db
 from ...dependencies.restaurant_dependencies import get_restaurant_table_service
-from ...model import Restaurant
+from ...model import Restaurant,DiningSession
+from ...model.repositories.restaurant_table_repo import RestaurantTableRepo
+from ...schemas import PaginatedResponse
 from ...services.restaurant import RestaurantTableService
 from ...schemas.restaurant import (
     CreateRestoRequest,
     CreateRestoTableResponse,
     CreateSeshStatusRequest,
-    UpdateRestoTableResponse,
+    UpdateRestoTableResponse, TableWithDinningSessionData,
 )
 from ...dependencies import (
     get_authenticated_user,
@@ -16,13 +19,51 @@ from ...dependencies import (
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter,Depends,HTTPException
+from fastapi import APIRouter,Depends,HTTPException,Query
 
 router = APIRouter(
-    prefix="/v1/restaurants/tables",
+    prefix="/v1/restaurant-table",
     tags=["Restaurants Tables"],
     dependencies=[Depends(get_authenticated_user),Depends(get_current_restaurant)],
 )
+
+@router.get("",response_model=PaginatedResponse[TableWithDinningSessionData])
+async def index(
+    restaurant: Restaurant = Depends(get_current_restaurant),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1),
+    db: AsyncSession = Depends(get_db),
+    sort_by: Optional[
+        Literal["table_name", "created_at", "updated_at", "has_active_session"]
+    ] = Query(None),
+    sort_order: Optional[Literal["asc", "desc"]] = Query(None),
+    search: Optional[str] = Query(None),
+):
+    resto_table_repo = RestaurantTableRepo(db)
+
+    table, total = await resto_table_repo.filter(
+        page,
+        page_size,
+        sort_by,
+        sort_order,
+        search,
+        restaurant.id,
+        relationships=[
+            resto_table_repo.model.dining_sessions.and_(
+                DiningSession.is_active.is_(True),
+                DiningSession.closed_at.is_(None),
+                DiningSession.status != "rejected",
+            )
+        ],
+    )
+
+    return PaginatedResponse(
+        page=page,
+        page_size=page_size,
+        total_items=total,
+        data=table,
+    )
+
 
 @router.post("",response_model=CreateRestoTableResponse)
 async def create_restaurant_table(
@@ -47,34 +88,6 @@ async def create_restaurant_table(
         raise HTTPException(
             status_code=500,
             detail="Failed to create table",
-        )
-
-@router.patch("/{session_token}/status",)
-async def update_dinning_sesh_status(
-        session_token: str,
-        payload : CreateSeshStatusRequest,
-        table_service: RestaurantTableService = Depends(get_restaurant_table_service),
-        db: AsyncSession = Depends(get_db),
-):
-    try:
-        dining_sesh = await table_service.update_table_sesh_status(
-            session_token,
-            payload,
-        )
-        await db.commit()
-
-        return {
-            "success": True,
-            "data": dining_sesh,
-        }
-    except HTTPException:
-        await db.rollback()
-        raise
-    except Exception:
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to update dining session status",
         )
 
 
@@ -106,3 +119,4 @@ async def update_resto_table(
             status_code=500,
             detail="Failed to update restaurant table",
         )
+
