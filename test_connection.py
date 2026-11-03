@@ -1,15 +1,27 @@
 import asyncio
+
 from sqlalchemy import text
+
 from app.core.database import engine
 
-async def test_connection():
+
+async def check_connection():
     try:
         async with engine.connect() as connection:
             await connection.execute(text("SELECT 1"))
-            print("Successfully connected to Supabase!")
-    except Exception as e:
-        print(f"Connection failed: {e}")
     finally:
         await engine.dispose()
 
-asyncio.run(test_connection())
+
+def main():
+    try:
+        asyncio.run(check_connection())
+    except Exception as exc:
+        print(f"Connection failed: {exc}")
+        raise SystemExit(1) from exc
+
+    print("Successfully connected to Supabase!")
+
+
+if __name__ == "__main__":
+    main()

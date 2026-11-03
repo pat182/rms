@@ -5,6 +5,8 @@ from pydantic import EmailStr, ConfigDict
 from ...core.base_schema import BaseSchema
 from ...schemas.country.country_schema import CountryData
 
+
+# ==================== REQUEST SCHEMAS ====================
 class RestaurantStatusRequest(BaseSchema):
     is_active: bool
 
@@ -15,6 +17,8 @@ class CreateRestaurantRequest(BaseSchema):
     address: str
     email: EmailStr | None = None
 
+
+# ==================== DATA SCHEMAS ====================
 class RestaurantData(BaseSchema):
     id: int
     country_id: int
@@ -29,6 +33,7 @@ class RestaurantData(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ==================== RESPONSE SCHEMAS ====================
 class CreateRestaurantResponse(BaseSchema):
     success: bool
     data: RestaurantData

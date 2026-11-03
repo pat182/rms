@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 
 
-def test_create_menu_success(client, menu_service):
+def test_create_menu_success(client, menu_service, db):
     menu_service.create_menu.return_value = {
         "id": 1,
         "restaurant_id": 1,
@@ -29,10 +29,14 @@ def test_create_menu_success(client, menu_service):
     assert body["success"] is True
     assert body["data"]["menu_name"] == "Test Menu"
 
-    menu_service.create_menu.assert_awaited_once_with(
-        menu_service.create_menu.await_args.args[0],
-        1,
-    )
+    menu_service.create_menu.assert_awaited_once()
+    payload, restaurant_id = menu_service.create_menu.await_args.args
+    assert payload.menu_name == "Test Menu"
+    assert payload.description is None
+    assert payload.is_active is False
+    assert restaurant_id == 1
+    db.commit.assert_awaited_once()
+    db.rollback.assert_not_awaited()
 
 
 def test_create_menu_validation_error(client, menu_service):
@@ -47,7 +51,7 @@ def test_create_menu_validation_error(client, menu_service):
     menu_service.create_menu.assert_not_awaited()
 
 
-def test_create_menu_service_error(client, menu_service):
+def test_create_menu_service_error(client, menu_service, db):
     menu_service.create_menu.side_effect = RuntimeError("Database error")
 
     response = client.post(
@@ -57,6 +61,8 @@ def test_create_menu_service_error(client, menu_service):
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Failed to create menu"
+    db.commit.assert_not_awaited()
+    db.rollback.assert_awaited_once()
 
 
 def test_get_menu_success(client, menu_service):
@@ -160,12 +166,16 @@ def test_create_complete_menu_success(
     assert body["data"]["menu_items"][0]["item_name"] == "Coke Large"
     assert body["data"]["categories"] == []
 
-    menu_service.create_complete_menu.assert_awaited_once_with(
-        menu_service.create_complete_menu.await_args.args[0],
-        item_service,
-        category_service,
-        1,
+    menu_service.create_complete_menu.assert_awaited_once()
+    payload, received_item_service, received_category_service, restaurant_id = (
+        menu_service.create_complete_menu.await_args.args
     )
+    assert payload.menu_name == "Filipino Favorites"
+    assert len(payload.menu_items) == 1
+    assert payload.menu_items[0].item_name == "Coke Large"
+    assert received_item_service is item_service
+    assert received_category_service is category_service
+    assert restaurant_id == 1
 
 
 def test_create_complete_menu_failure(
@@ -173,6 +183,7 @@ def test_create_complete_menu_failure(
     menu_service,
     item_service,
     category_service,
+    db,
 ):
     menu_service.create_complete_menu.side_effect = RuntimeError(
         "Insertion failed"
@@ -189,3 +200,5 @@ def test_create_complete_menu_failure(
 
     assert response.status_code == 500
     assert response.json()["detail"] == "Failed to create menu"
+    db.commit.assert_not_awaited()
+    db.rollback.assert_awaited_once()

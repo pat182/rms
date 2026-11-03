@@ -3,6 +3,7 @@ from app.core.base_schema import BaseSchema
 from pydantic import ConfigDict
 
 
+# ==================== DATA SCHEMAS ====================
 class RoleData(BaseSchema):
     id: int
     role_name: str

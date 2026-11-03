@@ -5,6 +5,7 @@ from app.schemas.menu.menu_item_schema_v2 import UpdateCompleteMenuItemRequest
 from app.core.base_schema import BaseSchema
 from pydantic import ConfigDict, Field,field_validator
 
+
 # ==================== REQUEST SCHEMAS ====================
 
 class UpdateCompleteSubcategoryRequest(BaseSchema):
@@ -21,6 +22,7 @@ class UpdateCompleteSubcategoryRequest(BaseSchema):
         if not value:
             raise ValueError("Subcategory name is required.")
         return value
+
 
 class UpdateCompleteMenuCategoryRequest(BaseSchema):
     id: int | None = None

@@ -2,7 +2,7 @@ from app.core.base_repo import BaseRepo
 
 from sqlalchemy import select
 
-from app.model import RestaurantTable
+from app.model import RestaurantTable, DiningSession
 
 
 class RestaurantTableRepo(BaseRepo):
@@ -12,4 +12,12 @@ class RestaurantTableRepo(BaseRepo):
     @property
     def model(self):
         return RestaurantTable
+
+    async def get_dinning_sesh(self, session_token: str) -> DiningSession | None:
+        sesh = (await self.db.execute(
+            select(DiningSession)
+            .where(DiningSession.session_token == session_token)
+        ))
+
+        return sesh.scalar_one_or_none()
 
