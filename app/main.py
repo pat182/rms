@@ -5,7 +5,8 @@ from app.routers.v1 import (
     menu_router,menu_category_router,
     menu_item_router,
     authentication_router,
-    restaurant_table_router
+    restaurant_table_router,
+    dinning_session_router
 )
 from app.routers.customer_interface import (customer_menu_router)
 from app.routers.ws_route import router as websocket_router
@@ -49,6 +50,8 @@ app.include_router(menu_router)
 app.include_router(menu_category_router)
 app.include_router(menu_item_router)
 app.include_router(restaurant_table_router)
+app.include_router(dinning_session_router)
+
 #=============CUSTOMER INTERFACE=============
 app.include_router(customer_menu_router)
 

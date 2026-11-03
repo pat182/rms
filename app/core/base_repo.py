@@ -18,6 +18,9 @@ class BaseRepo(ABC):
     def model(self):
         pass
 
+    def apply_custom_sorting(self, stmt, sort_by: str, sort_order: str):
+        return stmt
+
     def apply_search(self, stmt, search: str | None):
         if not search or not search.strip():
             return stmt
@@ -101,6 +104,12 @@ class BaseRepo(ABC):
                     if sort_order == "asc"
                     else sort_col.desc()
                 )
+        else:
+            stmt = self.apply_custom_sorting(
+                stmt,
+                sort_by,
+                sort_order,
+            )
 
         total_stmt = select(func.count()).select_from(stmt.subquery())
         total = await self.db.scalar(total_stmt) or 0

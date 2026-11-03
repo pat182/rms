@@ -24,6 +24,7 @@ async def get_menu(
                     "event": "dining_session_created",
                     "data": {
                         "session_id": dining_sesh.id,
+                        "session_token" : dining_sesh.session_token,
                         "table_name": dining_sesh.restaurant_table.table_name,
                         "status": dining_sesh.status,
                     },
