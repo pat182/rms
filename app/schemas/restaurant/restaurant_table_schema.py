@@ -20,6 +20,19 @@ class CreateRestoRequest(BaseSchema):
 
 
 # ==================== DATA SCHEMAS ====================
+class DefaultDinningSession(BaseSchema):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    restaurant_table_id: int
+    session_token: str
+    is_active: bool = True
+    status : Literal["pending", "verified", "rejected"]
+    started_at: datetime
+    closed_at: datetime | None = None
+
+class DiningSessionWithTableData(DefaultDinningSession):
+    restaurant_table: "DefaultRestoTable"
+
 class DefaultRestoTable(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -34,6 +47,9 @@ class DefaultRestoTable(BaseSchema):
 
 class TableWithRestoData(BaseSchema):
     restaurant: RestaurantData
+
+class TableWithDinningSessionData(DefaultRestoTable):
+    dining_sessions: list[DefaultDinningSession] = []
 
 # ==================== RESPONSE SCHEMAS ====================
 
