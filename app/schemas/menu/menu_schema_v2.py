@@ -42,13 +42,3 @@ class UpdateCompleteMenuRequest(BaseSchema):
             raise ValueError("Menu name is required.")
         return value
 
-
-
-# ==================== DATA SCHEMAS ====================
-
-
-
-
-# ==================== RESPONSE SCHEMAS ====================
-
-

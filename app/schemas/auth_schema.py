@@ -4,10 +4,13 @@ from app.core.base_schema import BaseSchema
 from typing import Optional,Union
 
 
+# ==================== REQUEST SCHEMAS ====================
 class LoginRequest(BaseSchema):
     email: str
     password: str
 
+
+# ==================== DATA SCHEMAS ====================
 class Tokens(BaseSchema):
     expires_in: int
     expires_at: str
@@ -23,6 +26,8 @@ class AppTokens(BaseSchema):
     r_expires_in: int
     r_expires_at: str
 
+
+# ==================== RESPONSE SCHEMAS ====================
 class TokenResponse(BaseSchema):
     csrf: Optional[str] = None
     token : Union[Tokens,AppTokens]

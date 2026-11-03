@@ -83,35 +83,50 @@ def category_service():
 
 @pytest.fixture
 def client(
+    monkeypatch,
     db,
     auth_user,
     menu_service,
     item_service,
     category_service,
 ):
-    app.dependency_overrides[get_db] = lambda: db
-    app.dependency_overrides[get_authenticated_user] = lambda: auth_user
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db)
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_authenticated_user,
+        lambda: auth_user,
+    )
 
-    app.dependency_overrides[get_menu_service] = lambda: menu_service
-    app.dependency_overrides[get_menu_item_service] = lambda: item_service
-    app.dependency_overrides[get_menu_category_service] = lambda: category_service
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_menu_service,
+        lambda: menu_service,
+    )
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_menu_item_service,
+        lambda: item_service,
+    )
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_menu_category_service,
+        lambda: category_service,
+    )
 
     with TestClient(app) as test_client:
-        test_client.headers.update({
-            "X-RESTAURANT-ID": "1"
-        })
+        test_client.headers.update({"X-RESTAURANT-ID": "1"})
         yield test_client
 
-    app.dependency_overrides.clear()
 
 @pytest.fixture
-def auth_client(db):
-    app.dependency_overrides[get_db] = lambda: db
-    app.dependency_overrides.pop(get_authenticated_user, None)
+def auth_client(monkeypatch, db):
+    monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db)
+    monkeypatch.delitem(
+        app.dependency_overrides,
+        get_authenticated_user,
+        raising=False,
+    )
 
     with TestClient(app) as test_client:
         yield test_client
-
-    app.dependency_overrides.clear()
-
 

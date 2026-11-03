@@ -61,7 +61,6 @@ async def show(
         raise HTTPException(status_code=500, detail="Failed to get restaurant")
 
 
-
 @router.put("/{restaurant_id}/status",response_model=CreateRestaurantResponse)
 async def toggle_status(
     restaurant_id: int,

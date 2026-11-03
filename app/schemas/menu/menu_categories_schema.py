@@ -5,6 +5,7 @@ from app.core.base_schema import BaseSchema
 from pydantic import ConfigDict, Field,field_validator
 
 
+# ==================== REQUEST SCHEMAS ====================
 class CreateSubcategoryRequest(BaseSchema):
     category_name: str
     sort_order: int = 0
@@ -19,6 +20,7 @@ class CreateSubcategoryRequest(BaseSchema):
         if not value:
             raise ValueError("Subcategory name is required.")
         return value
+
 
 class CreateMenuCategoryRequest(BaseSchema):
     category_name: str
@@ -36,9 +38,12 @@ class CreateMenuCategoryRequest(BaseSchema):
             raise ValueError("Category name is required.")
         return value
 
+
 class CreateCompleteMenuCategoryRequest(CreateMenuCategoryRequest):
     menu_items: list[CreateMenuItemRequest] = []
 
+
+# ==================== DATA SCHEMAS ====================
 class MenuCategoryData(BaseSchema):
     model_config = ConfigDict(
         from_attributes=True
@@ -54,6 +59,7 @@ class MenuCategoryData(BaseSchema):
     subcategories: list["CompeteMenuSubCategoryData"] = Field(default_factory=list)
     menu_items: list["MenuItemDataWithClientID"] = Field(default_factory=list)
 
+
 class MenuSubCategoryData(BaseSchema):
     model_config = ConfigDict(
         from_attributes=True
@@ -67,11 +73,13 @@ class MenuSubCategoryData(BaseSchema):
     created_at: datetime
     updated_at: datetime
 
+
 class CompeteMenuSubCategoryData(MenuSubCategoryData):
     model_config = ConfigDict(
         from_attributes=True
     )
     menu_items: list["MenuItemDataWithClientID"] = Field(default_factory=list)
+
 
 class CreatedMenuCategoryData(BaseSchema):
     id: int
@@ -85,6 +93,8 @@ class CreatedMenuCategoryData(BaseSchema):
         default_factory=list
     )
 
+
+# ==================== RESPONSE SCHEMAS ====================
 class CreateMenuCategoryResponse(BaseSchema):
     success: bool
     data: list[CreatedMenuCategoryData]

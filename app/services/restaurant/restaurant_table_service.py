@@ -1,9 +1,10 @@
 from ...model import RestaurantTable, User, RestaurantUser, Restaurant
 from ...model.repositories.restaurant_table_repo import RestaurantTableRepo
-from ...schemas.restaurant import CreateRestoRequest
+from ...schemas.restaurant import CreateRestoRequest, CreateSeshStatusRequest
 
 # from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 
 class RestaurantTableService:
     def __init__(self,db: AsyncSession):
@@ -30,6 +31,34 @@ class RestaurantTableService:
 
         self.db.add_all(resto_tables)
 
-        await self.db.flush()
-
         return resto_tables
+
+    async def update_resto_table(
+        self,
+        table_id: int,
+        payload: CreateRestoRequest,
+        restaurant_id: int,
+    ) -> RestaurantTable:
+        table = await self.repo.get_by_id(table_id, restaurant_id)
+
+        if table is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Restaurant table not found",
+            )
+
+        table.table_name = payload.table_name
+        table.capacity = payload.capacity
+        table.is_active = payload.is_active
+
+        return table
+
+    async def update_table_sesh_status(self, session_token, payload: CreateSeshStatusRequest):
+        dinning_sesh = await self.repo.get_dinning_sesh(session_token)
+
+        if dinning_sesh is None:
+            raise HTTPException(status_code=404, detail="Dinning session not found")
+
+        dinning_sesh.status = payload.status
+
+        return dinning_sesh

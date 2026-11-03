@@ -7,6 +7,7 @@ from app.schemas.role_schema import RoleData
 from pydantic import ConfigDict
 
 
+# ==================== DATA SCHEMAS ====================
 class UserResponse(BaseSchema):
     id: int
     role_id : int
@@ -19,6 +20,7 @@ class UserResponse(BaseSchema):
     restaurants: list[RestaurantData] = []
     model_config = ConfigDict(from_attributes=True)
 
+
 class UsersResponseV2(BaseSchema):
     id: int
     role_id: int
@@ -30,6 +32,8 @@ class UsersResponseV2(BaseSchema):
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
+# ==================== RESPONSE SCHEMAS ====================
 class UserHttpResponse(BaseSchema):
     success: bool
     data: UsersResponseV2

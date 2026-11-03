@@ -7,6 +7,8 @@ __all__ = [
     "RestaurantStatusRequest",
     "CreateRestaurantRequest",
     "RestaurantData",
-    "CreateRestoTableResponse"
+    "CreateRestoTableResponse",
+    "UpdateRestoTableResponse",
+    "CreateSeshStatusRequest",
 
 ]
