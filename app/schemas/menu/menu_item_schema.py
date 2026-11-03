@@ -3,6 +3,8 @@ from decimal import Decimal
 from app.core.base_schema import BaseSchema
 from pydantic import ConfigDict,Field,field_validator
 
+
+# ==================== REQUEST SCHEMAS ====================
 class CreateMenuItemRequest(BaseSchema):
     client_id: str | None = None
     menu_category_id: int | None = None
@@ -28,6 +30,8 @@ class CreateMenuItemRequest(BaseSchema):
             raise ValueError("Price should be greater than 0.")
         return value
 
+
+# ==================== DATA SCHEMAS ====================
 class MenuItemData(BaseSchema):
     model_config = ConfigDict(
         from_attributes=True
@@ -44,9 +48,12 @@ class MenuItemData(BaseSchema):
     created_at: datetime
     updated_at: datetime
 
+
 class MenuItemDataWithClientID(MenuItemData):
     client_id: str | None = None
 
+
+# ==================== RESPONSE SCHEMAS ====================
 class CreateMenuItemResponse(BaseSchema):
     success: bool
     data: list[MenuItemData]

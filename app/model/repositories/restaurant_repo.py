@@ -1,7 +1,10 @@
+from sqlalchemy.orm import contains_eager
+
 from app.core.base_repo import BaseRepo
 
-from app.model import Menu, Restaurant, RestaurantUser
+from app.model import Menu, Restaurant, RestaurantUser, Country
 from sqlalchemy import select
+
 
 class RestaurantRepository(BaseRepo):
     SEARCH_FIELDS = ("restaurant_name",)
@@ -12,14 +15,25 @@ class RestaurantRepository(BaseRepo):
         return Restaurant
 
     async def get_user_restaurant(self, restaurant_id,user_id):
-        return await self.db.execute(
+        result = await self.db.execute(
             select(self.model)
-            .join(RestaurantUser, self.model.id == RestaurantUser.restaurant_id)
+            .join(
+                RestaurantUser,
+                self.model.id == RestaurantUser.restaurant_id,
+            )
+            .join(
+                Country,
+                self.model.country_id == Country.id,
+            )
+            .options(
+                contains_eager(self.model.country)
+            )
             .where(
                 self.model.id == restaurant_id,
-                RestaurantUser.user_id == user_id
+                RestaurantUser.user_id == user_id,
             )
         )
+        return result
     async def get_resto_by_name(self, resto_name:str ):
         return await self.db.execute(
             select(self.model).where(

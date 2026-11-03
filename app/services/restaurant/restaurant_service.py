@@ -1,5 +1,6 @@
 from ...model import (User,Restaurant,Country)
 from ...model.repositories import RestaurantRepository
+
 from app.schemas.restaurant.restaurant_schema import CreateRestaurantRequest
 
 from fastapi import HTTPException
@@ -17,6 +18,7 @@ class RestaurantService:
 
         restaurant = result.scalar_one_or_none()
 
+
         if restaurant is None:
             raise HTTPException(
                 status_code=404,
@@ -29,9 +31,10 @@ class RestaurantService:
 
         restaurant = await self.get_restaurant(restaurant_id,auth_user)
 
+
         restaurant.is_active = is_active
 
-        await self.db.flush()
+        # await self.db.flush()
 
         return restaurant
 
@@ -69,4 +72,3 @@ class RestaurantService:
 
 
         return restaurant
-

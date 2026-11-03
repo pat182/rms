@@ -5,6 +5,8 @@ from pydantic import BaseModel, ConfigDict
 
 T = TypeVar("T")
 
+
+# ==================== RESPONSE SCHEMAS ====================
 class PaginatedResponse(BaseSchema, Generic[T]):
     page: int
     page_size: int

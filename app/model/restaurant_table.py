@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class RestaurantTable(Base):
     __tablename__ = 'restaurant_tables'
-
+    __mapper_args__ = {"eager_defaults": True}
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
