@@ -91,7 +91,7 @@ def test_update_dining_session_status_success(
     }
 
     response = table_client.patch(
-        "/v1/restaurant-table/dummy-session-token/status",
+        "/v1/dining-session/dummy-session-token/status",
         json={"status": "verified"},
     )
 
@@ -120,7 +120,7 @@ def test_update_dining_session_status_http_error(
     )
 
     response = table_client.patch(
-        "/v1/restaurant-table/dummy-session-token/status",
+        "/v1/dining-session/dummy-session-token/status",
         json={"status": "rejected"},
     )
 
@@ -138,7 +138,7 @@ def test_update_dining_session_status_unexpected_error(
     table_service.update_table_sesh_status.side_effect = RuntimeError("failed")
 
     response = table_client.patch(
-        "/v1/restaurant-table/dummy-session-token/status",
+        "/v1/dining-session/dummy-session-token/status",
         json={"status": "pending"},
     )
 
@@ -155,7 +155,7 @@ def test_update_dining_session_status_rejects_invalid_status(
     table_service,
 ):
     response = table_client.patch(
-        "/v1/restaurant-table/dummy-session-token/status",
+        "/v1/dining-session/dummy-session-token/status",
         json={"status": "finished"},
     )
 
