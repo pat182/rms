@@ -10,7 +10,7 @@ from pydantic import ConfigDict
 # ==================== REQUEST SCHEMAS ====================
 
 class CreateSeshStatusRequest(BaseSchema):
-    status : Literal["pending", "verified", "rejected"]
+    status : Literal["pending", "verified", "closed"]
 
 class CreateRestoRequest(BaseSchema):
     table_name: str
@@ -26,7 +26,7 @@ class DefaultDinningSession(BaseSchema):
     restaurant_table_id: int
     session_token: str
     is_active: bool = True
-    status : Literal["pending", "verified", "rejected"]
+    status : Literal["pending", "verified", "closed"]
     started_at: datetime
     closed_at: datetime | None = None
 
