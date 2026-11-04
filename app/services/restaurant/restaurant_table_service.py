@@ -1,4 +1,7 @@
-from ...model import RestaurantTable, User, RestaurantUser, Restaurant
+# from sentry_sdk.utils import now
+from datetime import datetime, timezone
+
+from ...model import RestaurantTable, Restaurant
 from ...model.repositories.restaurant_table_repo import RestaurantTableRepo
 from ...schemas.restaurant import CreateRestoRequest, CreateSeshStatusRequest
 
@@ -60,5 +63,9 @@ class RestaurantTableService:
             raise HTTPException(status_code=404, detail="Dinning session not found")
 
         dinning_sesh.status = payload.status
+        if payload.status == "closed":
+            dinning_sesh.is_active = False
+            dinning_sesh.closed_at = datetime.now(timezone.utc)
+
 
         return dinning_sesh

@@ -121,7 +121,7 @@ def test_update_dining_session_status_http_error(
 
     response = table_client.patch(
         "/v1/dining-session/dummy-session-token/status",
-        json={"status": "rejected"},
+        json={"status": "closed"},
     )
 
     assert response.status_code == 404

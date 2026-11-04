@@ -26,6 +26,15 @@ async def get_menu(
                         "session_id": dining_sesh.id,
                         "session_token" : dining_sesh.session_token,
                         "table_name": dining_sesh.restaurant_table.table_name,
+                        "is_active" : dining_sesh.is_active,
+                        "started_at": (
+                            dining_sesh.started_at.isoformat()
+                            if dining_sesh.started_at else None
+                        ),
+                        "closed_at": (
+                            dining_sesh.closed_at.isoformat()
+                            if dining_sesh.closed_at else None
+                        ),
                         "status": dining_sesh.status,
                     },
                 },
