@@ -78,11 +78,15 @@ class BaseRepo(ABC):
             search: str | None,
             restaurant_id: int | None = None,
             relationships: list | None = None,
+            filters: list | None = None,
     ):
         page = max(1, page)
         page_size = min(max(1, page_size), 100)
 
         stmt = select(self.model)
+
+
+
 
         if relationships:
             stmt = stmt.options(
@@ -93,6 +97,10 @@ class BaseRepo(ABC):
             stmt = stmt.where(
                 self.model.restaurant_id == restaurant_id
             )
+
+        if filters:
+            for condition in filters:
+                stmt = stmt.where(condition)
 
         stmt = self.apply_search(stmt, search)
 

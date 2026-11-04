@@ -27,4 +27,8 @@ async def admin_notification(
             await websocket.receive_text()
 
     except WebSocketDisconnect:
+        # from app.core.logger import log_info
+        # log_info('=======================================')
+        # log_info('sadasdasd')
+        # log_info('=======================================')
         manager.disconnect(group_id, websocket)
