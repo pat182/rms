@@ -12,8 +12,26 @@ class MenuRepository(BaseRepo):
     def model(self):
         return Menu
 
-    async def modified_get_by_id(self, uuid: str | int, restaurant_id: int) ->dict | None:
+    async def get_active_menu(self, restaurant_id: int) -> Menu | None:
+        stmt = (
+            select(self.model)
+            .options(
+                selectinload(
+                    self.model.menu_categories
+                    # .and_(
+                    #     MenuCategory.parent_id.is_(None)
+                    # )
+                ),
+                selectinload(self.model.menu_items)
+            )
+            .where(
+                self.model.restaurant_id == restaurant_id,
+                self.model.is_active.is_(True),
+            )
+        )
+        return await self.db.scalar(stmt)
 
+    async def modified_get_by_id(self, uuid: str | int, restaurant_id: int) ->dict | None:
 
         menu = await self.db.scalar(
             select(self.model)

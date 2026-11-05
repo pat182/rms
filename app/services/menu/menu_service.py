@@ -20,6 +20,19 @@ class MenuService:
         self.db = db
         self.repo = MenuRepository(self.db)
 
+
+    async def get_active_menu(self,restaurant_id:int) -> Menu:
+       menu = await self.repo.get_active_menu(restaurant_id)
+
+       if menu is None:
+           raise HTTPException(
+               status_code=404,
+               detail="No active menu found for this restaurant.",
+           )
+
+       return menu
+
+
     async def get_menu(self,menu_id:int,auth_restaurant_id:int)->dict[str, Any] | None:
         # breakpoint()
         menu = await self.repo.modified_get_by_id(menu_id,auth_restaurant_id)
