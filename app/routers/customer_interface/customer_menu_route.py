@@ -1,18 +1,30 @@
+from pydantic import BaseModel
+
+from ...core.dependencies import get_db
 from ...dependencies.customer_interface import get_or_create_dining_session
-from ...model import DiningSession
+from ...dependencies.menu_dependencies.menu_dependecies import get_menu_service, get_menu_item_service
+from ...model import DiningSession, MenuItem
 from ...core.websocket import manager
+from ...model.repositories import MenuItemRepository
+from ...schemas.menu.menu_item_schema import MenuItemData, MenuItemResponse
+from ...services import MenuService
 
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
+
+from ...services.menu.menu_item_service import MenuItemService
 
 router = APIRouter(
     prefix="/customer/tables/{table_qr}",
     tags=["Customer Menu"]
 )
 
-@router.get("",)
+
+
+@router.get("")
 async def get_menu(
-    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session)
+    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    menu_service : MenuService = Depends(get_menu_service)
 ):
     dining_sesh, is_new = sesh_data
     restaurant = dining_sesh.restaurant_table.restaurant
@@ -40,8 +52,48 @@ async def get_menu(
                 },
             )
 
+    menu_data = await menu_service.get_active_menu(restaurant.id)
+
+
+    return {
+        'success': True,
+        'data': {
+            "restaurant_id" : restaurant.id,
+            "restaurant_name" : restaurant.restaurant_name,
+            "menu" : menu_data
+        }
+    }
+
+
+@router.get("/item/{item_id}",response_model=MenuItemResponse)
+async def get_menu_item(
+    # table_qr : str,
+    item_id: int,
+    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    item_service : MenuItemService = Depends(get_menu_item_service)
+):
+
+    restaurant = sesh_data[0].restaurant_table.restaurant
+
     # from app.core.logger import log_info
     # log_info('=======================================')
-    # log_info('DINING SESSION', restaurant)
+    # log_info('MENU_DATA',menu_repo)
     # log_info('=======================================')
-    return {restaurant}
+
+    item = await item_service.get_item(item_id, restaurant.id)
+
+
+    return {
+        "success" : True,
+        "data": MenuItemData.model_validate(item),
+    }
+
+@router.post("/orders")
+async def create_order(
+    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+):
+    
+    return {
+        "success" : True,
+        "data": sesh_data,
+    }
