@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DB_NAME: str
     DB_USER: str
     DB_PASSWORD: str
+    REDIS_URL: str
     STORAGE_PROVIDER:str
     SECRET_KEY: str
     JWT_HASHING_ALGORITHM: str

@@ -32,3 +32,21 @@ async def admin_notification(
         # log_info('sadasdasd')
         # log_info('=======================================')
         manager.disconnect(group_id, websocket)
+
+@router.websocket("/ws/shared-cart/{session_token}")
+async def shared_cart(
+    websocket: WebSocket,
+    session_token: str
+):
+    group_id = f"shared_cart:{session_token}"
+    await manager.connect(group_id, websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        # from app.core.logger import log_info
+        # log_info('=======================================')
+        # log_info('sadasdasd')
+        # log_info('=======================================')
+        manager.disconnect(group_id, websocket)

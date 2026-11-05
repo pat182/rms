@@ -1,18 +1,16 @@
-from pydantic import BaseModel
 
 from ...core.dependencies import get_db
 from ...dependencies.customer_interface import get_or_create_dining_session
 from ...dependencies.menu_dependencies.menu_dependecies import get_menu_service, get_menu_item_service
-from ...model import DiningSession, MenuItem
+from ...model import DiningSession
 from ...core.websocket import manager
-from ...model.repositories import MenuItemRepository
 from ...schemas.menu.menu_item_schema import MenuItemData, MenuItemResponse
 from ...services import MenuService
+from ...services.menu.menu_item_service import MenuItemService
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
 
-from ...services.menu.menu_item_service import MenuItemService
+
 
 router = APIRouter(
     prefix="/customer/tables/{table_qr}",
@@ -54,10 +52,10 @@ async def get_menu(
 
     menu_data = await menu_service.get_active_menu(restaurant.id)
 
-
     return {
         'success': True,
         'data': {
+            "dinning_session_token" : dining_sesh.session_token,
             "restaurant_id" : restaurant.id,
             "restaurant_name" : restaurant.restaurant_name,
             "menu" : menu_data
@@ -75,13 +73,7 @@ async def get_menu_item(
 
     restaurant = sesh_data[0].restaurant_table.restaurant
 
-    # from app.core.logger import log_info
-    # log_info('=======================================')
-    # log_info('MENU_DATA',menu_repo)
-    # log_info('=======================================')
-
     item = await item_service.get_item(item_id, restaurant.id)
-
 
     return {
         "success" : True,
@@ -92,6 +84,11 @@ async def get_menu_item(
 async def create_order(
     sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
 ):
+
+    # from app.core.logger import log_info
+    # log_info('=======================================')
+    # log_info('MENU_DATA',menu_repo)
+    # log_info('=======================================')
     
     return {
         "success" : True,

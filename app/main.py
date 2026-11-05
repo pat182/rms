@@ -1,4 +1,7 @@
+from contextlib import asynccontextmanager
+from app.core.redis import connect_redis, close_redis
 from pathlib import Path
+
 from app.core.config import settings
 from app.routers.v1 import (
     restaurant_router,
@@ -8,7 +11,10 @@ from app.routers.v1 import (
     restaurant_table_router,
     dinning_session_router
 )
-from app.routers.customer_interface import (customer_menu_router)
+from app.routers.customer_interface import (
+    customer_menu_router,
+    customer_socket_router
+)
 from app.routers.ws_route import router as websocket_router
 
 from app.core.logger_config import setup_logging
@@ -17,15 +23,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI,Request
 
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     await connect_redis(app)
+#
+#     try:
+#         yield
+#     finally:
+#         await close_redis(app)
+
 app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.DEBUG,
+    # lifespan=lifespan,
 )
-setup_logging()
 
+setup_logging()
 BASE_DIR = Path(__file__).resolve().parent.parent
 UPLOADS_DIR = BASE_DIR / "uploads"
-
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 app.mount(
@@ -43,6 +58,7 @@ app.add_middleware(
 )
 #=============WEB SOCKET=============
 app.include_router(websocket_router)
+
 #=============ADMIN INTERFACE=============
 app.include_router(authentication_router)
 app.include_router(restaurant_router)
@@ -54,6 +70,8 @@ app.include_router(dinning_session_router)
 
 #=============CUSTOMER INTERFACE=============
 app.include_router(customer_menu_router)
+app.include_router(customer_socket_router)
+
 
 
 @app.middleware("http")
