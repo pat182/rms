@@ -20,6 +20,19 @@ class MenuItemService:
         self.repo = MenuItemRepository(db)
         self.model = self.repo.model
 
+    async def get_item(self,menu_id: int,restaurant_id: int):
+       item = await self.repo.get_by_id(menu_id,restaurant_id)
+
+       if not item:
+           raise HTTPException(
+               status_code=404,
+               detail="Item not found",
+           )
+
+       return item
+
+
+
     async def create_menu_items(
             self,
             menu_id: int,
