@@ -6,6 +6,8 @@ from .menu_item_repo import MenuItemRepository
 from .restaurant_user_repo import RestaurantUserRepo
 from .user_refresh_token_repo import UserRefreshTokenRepository
 from .dining_session_repo import DiningSessionRepo
+from .customer_interface.customer_order_repo import CustomerOrderRepo
+from .customer_interface.customer_order_item_repo import CustomerOrderItemRepo
 
 __all__ = [
     "MenuRepository",
@@ -15,5 +17,7 @@ __all__ = [
     "MenuCategoryRepository",
     "RestaurantUserRepo",
     "UserRefreshTokenRepository",
-    "DiningSessionRepo"
+    "DiningSessionRepo",
+    "CustomerOrderRepo",
+    "CustomerOrderItemRepo"
 ]

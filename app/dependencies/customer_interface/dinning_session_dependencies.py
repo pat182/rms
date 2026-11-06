@@ -9,6 +9,7 @@ from fastapi import Depends, HTTPException
 
 async def get_or_create_dining_session(
     table_qr: str,
+    session_token: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> tuple[DiningSession, bool]:
 
@@ -54,23 +55,44 @@ async def get_or_create_dining_session(
     dining_session = await db.scalar(session_stmt)
 
     if dining_session:
-        return dining_session, False
-
-    dining_session = DiningSession(
-        restaurant_table_id=table.id,
-        is_active=True,
-    )
-
-    db.add(dining_session)
-    await db.commit()
-
-    dining_session = await db.scalar(
-        select(DiningSession)
-        .options(
-            selectinload(DiningSession.restaurant_table)
-            .selectinload(RestaurantTable.restaurant)
+        is_new = False
+    else:
+        dining_session = DiningSession(
+            restaurant_table_id=table.id,
+            is_active=True,
         )
-        .where(DiningSession.id == dining_session.id)
-    )
 
-    return dining_session, True
+        db.add(dining_session)
+        await db.commit()
+
+        dining_session = await db.scalar(
+            select(DiningSession)
+            .options(
+                selectinload(DiningSession.restaurant_table)
+                .selectinload(RestaurantTable.restaurant)
+            )
+            .where(DiningSession.id == dining_session.id)
+        )
+
+        is_new = True
+
+    # Validate the requested session token
+    if session_token is not None:
+
+        if session_token != dining_session.session_token:
+            raise HTTPException(
+                status_code=404,
+                detail="Dining session not found.",
+            )
+
+        if (
+            dining_session.status == "closed"
+            or dining_session.closed_at is not None
+            or not dining_session.is_active
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Dining session is closed.",
+            )
+
+    return dining_session, is_new

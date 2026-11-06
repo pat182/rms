@@ -17,11 +17,13 @@ jobs:
     env:
       APP_NAME: RMS Tests
       DEBUG: "false"
+      TESTING: TRUE
       DB_HOST: localhost
       DB_PORT: "5432"
       DB_NAME: rms_test
       DB_USER: rms_test
       DB_PASSWORD: test_password
+      REDIS_URL: redis_url
       STORAGE_PROVIDER: some_storage_provider
       SUPABASE_URL: "https://example.supabase.co"
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
