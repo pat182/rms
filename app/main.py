@@ -23,19 +23,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI,Request
 
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     await connect_redis(app)
-#
-#     try:
-#         yield
-#     finally:
-#         await close_redis(app)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await connect_redis(app)
+
+    try:
+        yield
+    finally:
+        await close_redis(app)
 
 app = FastAPI(
     title=settings.APP_NAME,
     debug=settings.DEBUG,
-    # lifespan=lifespan,
+    lifespan=lifespan,
 )
 
 setup_logging()

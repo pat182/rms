@@ -10,6 +10,7 @@ from .user_refresh_token import UserRefreshToken
 from .restaurant_table import RestaurantTable
 from .dinning_session import DiningSession
 from .customer_order import CustomerOrder
+from .customer_order_item import CustomerOrderItem
 
 __all__ = [
 
@@ -26,5 +27,6 @@ __all__ = [
     "RestaurantTable",
     "DiningSession",
     "CustomerOrder",
+    "CustomerOrderItem",
 
 ]

@@ -12,5 +12,5 @@ __all__=[
     "get_current_restaurant",
     "get_authenticated_websocket_user",
     "authorize_websocket_restaurant",
-    "get_redis"
+    "get_redis",
 ]

@@ -14,24 +14,23 @@ class CustomerOrder(Base):
     id: Mapped[int] = mapped_column(
         primary_key=True
     )
-    dining_session_token: Mapped[str] = mapped_column(
-        ForeignKey("dining_sessions.session_token", ondelete="CASCADE"),
+    restaurant_id: Mapped[int] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
-    # order_number: Mapped[str] = mapped_column(
-    #     String(30),
-    #     unique=True,
-    #     nullable=False,
-    #     index=True,
-    # )
+    dining_session_token: Mapped[str] = mapped_column(
+        ForeignKey("dining_sessions.session_token", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
-        default="pending",
+        default="pending", 	#pending, preparing, ready, served, canceled
         server_default="pending",
     )
-    sub_total: Mapped[Decimal] = mapped_column(
+    subtotal: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         nullable=False
     )
@@ -50,5 +49,13 @@ class CustomerOrder(Base):
     )
     dining_session: Mapped["DiningSession"] = relationship(
         "DiningSession",
+        back_populates="orders",
+    )
+    items: Mapped[list["CustomerOrderItem"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",
+    )
+    restaurant: Mapped["Restaurant"] = relationship(
+        "Restaurant",
         back_populates="orders",
     )

@@ -15,11 +15,6 @@ async def admin_notification(
     authorize_websocket_restaurant(current_user, restaurant_id)
     group_id = f"restaurant:{restaurant_id}"
 
-    # from app.core.logger import log_info
-    # log_info('=======================================')
-    # log_info('ORIGIN', websocket.headers.get("origin"))
-    # log_info('COOKIE', websocket.headers.get("cookie"))
-    # log_info('=======================================')
     await manager.connect(group_id, websocket)
 
     try:

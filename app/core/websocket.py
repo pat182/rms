@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from fastapi import WebSocket
-
+from app.core.logger import log_info
 
 class ConnectionManager:
     def __init__(self):
@@ -30,10 +30,16 @@ class ConnectionManager:
     async def broadcast(self, group_id: str, message: dict):
         connections = self.active_connections.get(group_id, [])
 
+        # log_info(f"==========================================")
+        # log_info("Broadcast group:", group_id)
+        # log_info("Connected clients:", len(connections))
+        # log_info(f"==========================================")
         for websocket in connections.copy():
             try:
                 await websocket.send_json(message)
-            except Exception:
+                log_info("WebSocket message sent successfully")
+            except Exception as e:
+                log_info(f"WebSocket broadcast failed: {repr(e)}")
                 self.disconnect(group_id, websocket)
 
     async def broadcast_except(
