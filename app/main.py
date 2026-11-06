@@ -53,7 +53,7 @@ app.mount(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","http://127.0.0.1:5173","https://pat-rms.vercel.app"],
+    allow_origins=["http://localhost:5173","http://127.0.0.1:5173","https://pat-rms.vercel.app","https://rms-customer-interface-test.vercel.app"],
     allow_credentials=True,
     allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
     allow_headers=["Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID"],
