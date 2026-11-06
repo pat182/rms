@@ -25,12 +25,14 @@ from fastapi import FastAPI,Request
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_redis(app)
+    if not settings.TESTING:
+        await connect_redis(app)
 
     try:
         yield
     finally:
-        await close_redis(app)
+        if not settings.TESTING:
+            await close_redis(app)
 
 app = FastAPI(
     title=settings.APP_NAME,

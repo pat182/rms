@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_NAME: str
     DEBUG: bool
+    TESTING: bool = False
 
     DB_HOST: str
     DB_PORT: int

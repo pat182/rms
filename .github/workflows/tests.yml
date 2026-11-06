@@ -17,6 +17,7 @@ jobs:
     env:
       APP_NAME: RMS Tests
       DEBUG: "false"
+      TESTING: TRUE
       DB_HOST: localhost
       DB_PORT: "5432"
       DB_NAME: rms_test
