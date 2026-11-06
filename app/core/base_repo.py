@@ -86,8 +86,6 @@ class BaseRepo(ABC):
         stmt = select(self.model)
 
 
-
-
         if relationships:
             stmt = stmt.options(
                 *[selectinload(rel) for rel in relationships]

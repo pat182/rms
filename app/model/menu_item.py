@@ -85,3 +85,6 @@ class MenuItem(Base):
         "MenuCategory",
         back_populates="menu_items"
     )
+    order_items: Mapped[list["CustomerOrderItem"]] = relationship(
+        back_populates="menu_item",
+    )

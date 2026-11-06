@@ -3,12 +3,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_NAME: str
     DEBUG: bool
+    TESTING: bool = False
 
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
     DB_USER: str
     DB_PASSWORD: str
+    REDIS_URL: str
     STORAGE_PROVIDER:str
     SECRET_KEY: str
     JWT_HASHING_ALGORITHM: str

@@ -52,3 +52,7 @@ class DiningSession(Base):
         "RestaurantTable",
         back_populates="dining_sessions",
     )
+    orders: Mapped[list["CustomerOrder"]] = relationship(
+        "CustomerOrder",
+        back_populates="dining_session",
+    )
