@@ -8,6 +8,9 @@ from .paginated_schema import *
 from .menu.menu_schema_v2 import *
 
 __all__ = [
+    "TokenResponse",
+    "Tokens",
+    "AppTokens",
     "CreateMenuRequest",
     "CreateCompleteMenuRequest",
     "CreateMenuCategoryRequest",
@@ -22,8 +25,6 @@ __all__ = [
     "CreateMenuResponse",
     "MenuResponse",
     "LoginRequest",
-    "TokenResponse",
-    "Tokens",
     "UserResponse",
     "UsersResponseV2",
     "UserHttpResponse",

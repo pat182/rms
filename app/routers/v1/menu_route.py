@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(
     prefix="/v1/menus",
     tags=["Menus"],
-    dependencies=[Depends(get_authenticated_user)],
+    # dependencies=[Depends(get_authenticated_user)],
 )
 
 @router.get("",response_model=PaginatedResponse[MenuData])

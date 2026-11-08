@@ -55,6 +55,8 @@ async def get_authenticated_websocket_user(
 
     return user
 
+
+
 def authorize_websocket_restaurant(
     auth_user,
     restaurant_id: int,

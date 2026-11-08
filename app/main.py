@@ -16,9 +16,9 @@ from app.routers.customer_interface import (
     customer_socket_router
 )
 from app.routers.ws_route import router as websocket_router
+from app.routers.kitchen_interface_router import router as kitchen_interface_router
 
 from app.core.logger_config import setup_logging
-
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI,Request
@@ -53,10 +53,17 @@ app.mount(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","http://127.0.0.1:5173","https://pat-rms.vercel.app","https://rms-customer-interface-test.vercel.app"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:8081",
+        "http://127.0.0.1:5173",
+        "https://pat-rms.vercel.app",
+        "https://rms-customer-interface-test.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
-    allow_headers=["Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID"],
+    allow_headers=["Authorization","Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID"],
 )
 #=============WEB SOCKET=============
 app.include_router(websocket_router)
@@ -74,13 +81,16 @@ app.include_router(dinning_session_router)
 app.include_router(customer_menu_router)
 app.include_router(customer_socket_router)
 
+#=============KITCHEN INTERFACE=============
+app.include_router(kitchen_interface_router)
+
 
 
 @app.middleware("http")
 async def check_client_type(request: Request, call_next):
     auth_header = request.headers.get("Authorization", "").lower()
 
-    if auth_header.startswith("bearer "):
+    if auth_header.startswith("bearer ") or auth_header.startswith("Bearer "):
         client_type = "app"
     else:
         client_type = "browser"

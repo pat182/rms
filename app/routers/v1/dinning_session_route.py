@@ -21,7 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(
     prefix="/v1/dining-session",
     tags=["Dinning Sessions"],
-    dependencies=[Depends(get_authenticated_user),Depends(get_current_restaurant)],
+    dependencies=[
+        # Depends(get_authenticated_user),
+        Depends(get_current_restaurant)],
 )
 
 @router.get("",response_model=PaginatedResponse[DiningSessionWithTableData])

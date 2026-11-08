@@ -84,8 +84,6 @@ async def toggle_status(
         raise HTTPException(status_code=500, detail="Failed to update status")
 
 
-
-
 @router.post("", response_model=CreateRestaurantResponse)
 async def create_restaurant(
         payload: CreateRestaurantRequest,

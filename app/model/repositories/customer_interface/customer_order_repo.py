@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from app.core.base_repo import BaseRepo
-from app.model import CustomerOrder
+from app.model import CustomerOrder, DiningSession
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -13,7 +15,7 @@ class CustomerOrderRepo(BaseRepo):
     def model(self):
         return CustomerOrder
 
-    async def get_orders_with_items(self,session_token:str):
+    async def get_orders_by_session(self, session_token:str):
         stmt = (
             select(self.model)
             .options(
@@ -26,6 +28,37 @@ class CustomerOrderRepo(BaseRepo):
 
         result = await self.db.scalars(stmt)
         return result.all()
+
+    async def get_orders_kitchen(
+            self,
+            restaurant_id:int,
+            start_date: datetime | None = None,
+            end_date: datetime | None = None,
+    ):
+        stmt = (
+            select(self.model)
+            .options(
+                selectinload(self.model.items),
+                selectinload(self.model.dining_session).selectinload(
+                    DiningSession.restaurant_table
+                ),
+            )
+            .where(
+                self.model.restaurant_id == restaurant_id,
+            )
+        )
+
+        if start_date and end_date:
+            stmt = stmt.where(
+                self.model.created_at.between(start_date, end_date)
+            )
+
+        stmt = stmt.order_by(self.model.created_at.asc())
+
+        result = await self.db.scalars(stmt)
+
+        return result.all()
+
 
 
 

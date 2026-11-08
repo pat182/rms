@@ -1,10 +1,30 @@
 from ...core.dependencies import get_db
 from ...model import DiningSession, RestaurantTable
+from ...services.restaurant import RestaurantTableService,DiningSessionService
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 from fastapi import Depends, HTTPException
+
+
+async def customer_session_dependency(
+    table_qr:str,
+    session_token: str,
+    db: AsyncSession = Depends(get_db),
+)->DiningSession:
+
+    table_service = RestaurantTableService(db)
+
+    table = await table_service.validate_table_qr_token(table_qr)
+
+    dining_session_service = DiningSessionService(db)
+
+    dining_session = await dining_session_service.validate_session(session_token,table.id)
+
+    return dining_session
+
+
 
 
 async def get_or_create_dining_session(
@@ -13,31 +33,10 @@ async def get_or_create_dining_session(
     db: AsyncSession = Depends(get_db),
 ) -> tuple[DiningSession, bool]:
 
-    stmt = (
-        select(RestaurantTable)
-        .options(selectinload(RestaurantTable.restaurant))
-        .where(RestaurantTable.qr_token == table_qr)
-    )
 
-    table = await db.scalar(stmt)
+    table_service = RestaurantTableService(db)
 
-    if not table:
-        raise HTTPException(
-            status_code=404,
-            detail="Invalid table QR code.",
-        )
-
-    if not table.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="This table is currently unavailable.",
-        )
-
-    if not table.restaurant or not table.restaurant.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="This restaurant is currently unavailable.",
-        )
+    table = await table_service.validate_table_qr_token(table_qr)
 
     session_stmt = (
         select(DiningSession)
@@ -75,24 +74,5 @@ async def get_or_create_dining_session(
         )
 
         is_new = True
-
-    # Validate the requested session token
-    if session_token is not None:
-
-        if session_token != dining_session.session_token:
-            raise HTTPException(
-                status_code=404,
-                detail="Dining session not found.",
-            )
-
-        if (
-            dining_session.status == "closed"
-            or dining_session.closed_at is not None
-            or not dining_session.is_active
-        ):
-            raise HTTPException(
-                status_code=403,
-                detail="Dining session is closed.",
-            )
 
     return dining_session, is_new

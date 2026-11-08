@@ -45,3 +45,33 @@ async def shared_cart(
         # log_info('sadasdasd')
         # log_info('=======================================')
         manager.disconnect(group_id, websocket)
+
+@router.websocket("/ws/order_status/{session_token}")
+async def order_status_update(
+    websocket: WebSocket,
+    session_token: str
+):
+    group_id = f"customer_session:{session_token}"
+    await manager.connect(group_id, websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(group_id, websocket)
+
+@router.websocket("/ws/kitchen-orders/{restaurant_id}")
+async def kitchen_orders(
+    websocket: WebSocket,
+    restaurant_id: int,
+):
+    group_id = f"kitchen_orders:{restaurant_id}"
+
+    await manager.connect(group_id, websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+
+    except WebSocketDisconnect:
+        manager.disconnect(group_id, websocket)

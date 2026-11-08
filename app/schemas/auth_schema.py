@@ -25,6 +25,7 @@ class AppTokens(BaseSchema):
     refresh_token: str
     r_expires_in: int
     r_expires_at: str
+    user: UserResponse
 
 
 # ==================== RESPONSE SCHEMAS ====================
