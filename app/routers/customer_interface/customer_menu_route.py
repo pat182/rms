@@ -4,7 +4,7 @@ from redis.asyncio import Redis
 from ...core.websocket import manager
 from ...core.dependencies import get_db
 from ...dependencies import get_redis
-from ...dependencies.customer_interface import get_or_create_dining_session,get_customer_order_service
+from ...dependencies.customer_interface import get_or_create_dining_session, get_customer_order_service, customer_session_dependency
 from ...dependencies.menu_dependencies.menu_dependecies import get_menu_service, get_menu_item_service
 from ...model import DiningSession
 from ...model.repositories import CustomerOrderRepo
@@ -62,6 +62,7 @@ async def get_menu(
     return {
         'success': True,
         'data': {
+            "is_new" : is_new,
             "dinning_session_token" : dining_sesh.session_token,
             "restaurant_id" : restaurant.id,
             "restaurant_name" : restaurant.restaurant_name,
@@ -74,11 +75,11 @@ async def get_menu(
 async def get_menu_item(
     # table_qr : str,
     item_id: int,
-    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
     item_service : MenuItemService = Depends(get_menu_item_service)
 ):
 
-    restaurant = sesh_data[0].restaurant_table.restaurant
+    restaurant = sesh_data.restaurant_table.restaurant
 
     item = await item_service.get_item(item_id, restaurant.id)
 
@@ -89,22 +90,17 @@ async def get_menu_item(
 
 @router.get("/shared-cart/{session_token}")
 async def get_shared_cart(
-    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
     redis: Redis = Depends(get_redis),
     db : AsyncSession = Depends(get_db)
 
 ):
-    dining_sesh, is_new = sesh_data
+    dining_sesh = sesh_data
 
     cart_items = await redis.get(f"rms:cart:{dining_sesh.session_token}")
 
     order_repo = CustomerOrderRepo(db)
-    orders = await order_repo.get_orders_with_items(dining_sesh.session_token)
-    # from app.core.logger import log_info
-    # log_info("=====================================================")
-    # for order in orders:
-    #     log_info("ORDERS", order.__dict__)
-    # log_info("=====================================================")
+    orders = await order_repo.get_orders_by_session(dining_sesh.session_token)
 
     return {
         "success": True,
@@ -117,14 +113,14 @@ async def get_shared_cart(
 @router.post("/orders/{session_token}")
 async def create_order(
     payload: list[CustomerCartRequest],
-    sesh_data: tuple[DiningSession, bool] = Depends(get_or_create_dining_session),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
     order_service: CustomerOrderService = Depends(get_customer_order_service),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis)
 ):
     try:
 
-        dining_sesh, is_new = sesh_data
+        dining_sesh= sesh_data
 
         order = await order_service.create_customer_order(
             payload,
@@ -167,6 +163,36 @@ async def create_order(
             })
         )
 
+        await manager.broadcast(
+            f"kitchen_orders:{order.restaurant_id}",
+            jsonable_encoder({
+                "event": "order_created",
+                "data": {
+                    "order": {
+                        "id": order.id,
+                        "table_number": dining_sesh.restaurant_table.id,
+                        "status": order.status,
+                        "created_at": order.created_at.isoformat() if order.created_at else None,
+                        "items": [
+                            {
+                                "id": item.id,
+                                "menu_item_id": item.menu_item_id,
+                                "item_name": item.item_name,
+                                "unit_price": item.unit_price,
+                                "quantity": item.quantity,
+                                "special_request": item.special_request,
+                                "subtotal": item.subtotal,
+                            }
+                            for item in order.items
+                        ],
+                        "dining_session" : dining_sesh,
+                        "subtotal": order.subtotal,
+                    }
+                }
+            })
+        )
+
+
         return {
             "success": True,
             "data": CustomerOrderData.model_validate(order),
@@ -175,9 +201,9 @@ async def create_order(
     except HTTPException:
         await db.rollback()
         raise
-    # except Exception:
-    #     await db.rollback()
-    #     raise HTTPException(
-    #         status_code=500,
-    #         detail="Internal Server Error"
-    #     )
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Internal Server Error"
+        )

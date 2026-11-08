@@ -24,7 +24,10 @@ from fastapi import APIRouter,Depends,HTTPException,Query
 router = APIRouter(
     prefix="/v1/restaurant-table",
     tags=["Restaurants Tables"],
-    dependencies=[Depends(get_authenticated_user),Depends(get_current_restaurant)],
+    dependencies=[
+        # Depends(get_authenticated_user),
+        Depends(get_current_restaurant)
+    ],
 )
 
 @router.get("",response_model=PaginatedResponse[TableWithDinningSessionData])
@@ -50,9 +53,9 @@ async def index(
         restaurant.id,
         relationships=[
             resto_table_repo.model.dining_sessions.and_(
-                DiningSession.is_active.is_(True),
-                DiningSession.closed_at.is_(None),
-                DiningSession.status != "rejected",
+                # DiningSession.is_active.is_(True),
+                # DiningSession.closed_at.is_(None),
+                # DiningSession.status != "rejected",
             )
         ],
     )

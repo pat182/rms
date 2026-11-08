@@ -1,5 +1,8 @@
-from .customer_interface_schema import CustomerCartRequest
+from .customer_interface_schema import *
 
 __all__ = [
-    "CustomerCartRequest"
+    "CustomerCartRequest",
+    "CustomerOrderWithItemData",
+    "GetOrdersResponse",
+    "OrderStatusRequest"
 ]

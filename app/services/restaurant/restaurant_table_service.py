@@ -5,8 +5,9 @@ from ...model import RestaurantTable, Restaurant
 from ...model.repositories.restaurant_table_repo import RestaurantTableRepo
 from ...schemas.restaurant import CreateRestoRequest, CreateSeshStatusRequest
 
-# from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException
 
 class RestaurantTableService:
@@ -69,3 +70,32 @@ class RestaurantTableService:
 
 
         return dinning_sesh
+
+    async def validate_table_qr_token(self, qr_token:str):
+        stmt = (
+            select(self.model)
+            .options(selectinload(self.model.restaurant))
+            .where(self.model.qr_token == qr_token)
+        )
+
+        table = await self.db.scalar(stmt)
+
+        if not table:
+            raise HTTPException(
+                status_code=404,
+                detail="Invalid table QR code.",
+            )
+
+        if not table.is_active:
+            raise HTTPException(
+                status_code=403,
+                detail="This table is currently unavailable.",
+            )
+
+        if not table.restaurant or not table.restaurant.is_active:
+            raise HTTPException(
+                status_code=403,
+                detail="This restaurant is currently unavailable.",
+            )
+
+        return table
