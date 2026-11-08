@@ -3,7 +3,7 @@ from redis.asyncio import Redis
 
 from ...core.websocket import manager
 from ...dependencies import get_redis
-from ...dependencies.customer_interface import get_or_create_dining_session
+from ...dependencies.customer_interface import customer_session_dependency
 from ...model import DiningSession
 from ...schemas.customer_interface import CustomerCartRequest
 
@@ -20,9 +20,10 @@ async def save_items(
     session_token: str,
     payload: list[CustomerCartRequest],
     redis: Redis = Depends(get_redis),
-    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
 ):
     # dining_sesh, is_new = sesh_data
+
 
     cart_data = [
         {

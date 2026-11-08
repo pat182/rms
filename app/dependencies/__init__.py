@@ -13,4 +13,5 @@ __all__=[
     "get_authenticated_websocket_user",
     "authorize_websocket_restaurant",
     "get_redis",
+    "require_role"
 ]

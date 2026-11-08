@@ -108,8 +108,8 @@ class Security:
                     detail="CSRF not allowed in app flow"
                 )
             token = header_token.split(" ", 1)[1]
+
             payload = self.decode_token(token)
-            # print(payload)
             if payload.get('client_type') != "app":
                 raise HTTPException(
                     status_code=401,

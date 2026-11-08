@@ -7,8 +7,7 @@ from ...services import AuthService
 from ...core.dependencies import get_db
 from ...core.security import SecurityInstance
 from ...helper import set_auth_cookies,clear_auth_cookies
-from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse, UsersResponseV2
-
+from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse, UsersResponseV2, AppTokens
 
 from fastapi import APIRouter, Depends,Request,Response,Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,15 +18,38 @@ router = APIRouter(
     prefix="/v1/auth",
     tags=["Authentication"]
 )
+@router.post("/app")
+async def app_login(
+    response: Response,
+    request:Request,
+    body: LoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    auth = AuthService(db, response, request.state.device_info,"app")
+
+    token_data = await auth.access_tokens(email=body.email, password=body.password)
+
+    return TokenResponse(
+        token=AppTokens(**token_data),
+        user=token_data['user']
+    )
+
 
 @router.post("",response_model=TokenResponse)
-async def login(response: Response,request:Request, body: LoginRequest,db: AsyncSession = Depends(get_db)):
+async def login(
+        response: Response,
+        request:Request,
+        body: LoginRequest,
+        db: AsyncSession = Depends(get_db)
+):
+
     auth = AuthService(db, response, request.state.device_info)
 
     token_data = await auth.access_tokens(email=body.email, password=body.password)
 
     set_auth_cookies(
-        response, access_token=token_data['access_token'],
+        response,
+        access_token=token_data['access_token'],
         refresh_token=token_data['refresh_token'],
         csrf_token=token_data['csrf_token'],
         access_exp=token_data['expires_in'],
@@ -47,12 +69,11 @@ async def refresh( response: Response,request : Request,
     payload = SecurityInstance.token_validation(request, 'refresh')
 
     if payload.get('client_type') == 'browser':
+
         token_data = await auth.refresh_tokens(refresh_token, payload)
-        # return token_data
+
         token_response = Tokens(**token_data)
-        # from app.core.logger import log_info
-        # log_info("==================================")
-        # log_info("TOKEN", token_data)
+
         set_auth_cookies(
             response,
             access_token=token_data['access_token'],

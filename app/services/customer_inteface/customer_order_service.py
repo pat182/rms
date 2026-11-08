@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 from ...model import DiningSession, CustomerOrder
 from ...model.repositories import CustomerOrderRepo,CustomerOrderItemRepo
 from ...schemas.customer_interface import CustomerCartRequest
@@ -53,6 +55,19 @@ class CustomerOrderService:
 
         return order
 
+    async def update_customer_order_status(self,order_id:int,status:str,restaurant_id:int):
 
-    # async def get_order
+        order = await self.repo.get_by_id(order_id,restaurant_id)
+
+        if order is None:
+            raise HTTPException(
+                status_code=404,
+                detail="No active menu found for this restaurant.",
+            )
+
+        order.status = status
+
+        return order
+
+
 

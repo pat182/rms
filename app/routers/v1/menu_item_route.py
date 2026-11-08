@@ -16,7 +16,7 @@ from fastapi import APIRouter, File,Depends, UploadFile,HTTPException,Request
 router = APIRouter(
     prefix="/v1/menus/{menu_id}/menu-items",
     tags=["Menu Items"],
-    dependencies=[Depends(get_authenticated_user)]
+    # dependencies=[Depends(get_authenticated_user)]
 )
 
 @router.post("",response_model=CreateMenuItemResponse)

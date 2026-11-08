@@ -4,6 +4,8 @@ from ...model.repositories import DiningSessionRepo
 
 from fastapi import HTTPException,Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 class DiningSessionService:
     def __init__(self,db: AsyncSession):
@@ -75,4 +77,48 @@ class DiningSessionService:
 
         return filters
 
+
+
+    async def validate_session(self,session_token:str,table_id:int):
+
+        session_stmt = (
+            select(self.model)
+            .options(
+                selectinload(self.model.restaurant_table)
+                .selectinload(RestaurantTable.restaurant)
+            )
+            .where(
+                self.model.session_token == session_token,
+                self.model.restaurant_table_id == table_id,
+                self.model.is_active.is_(True),
+                self.model.status.in_(["verified", "pending"]),
+            )
+        )
+
+        dining_session = await self.db.scalar(session_stmt)
+        if not dining_session:
+            raise HTTPException(
+                status_code=404,
+                detail="Dining session not found."
+            )
+
+        # Validate the requested session token
+        if session_token is not None:
+
+            if session_token != dining_session.session_token:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Session token did not match.",
+                )
+
+            if (dining_session.status == "closed"
+                    or dining_session.closed_at is not None
+                    or not dining_session.is_active):
+                raise HTTPException(
+
+                    status_code=403,
+                    detail="Dining session is closed.",
+                )
+
+        return dining_session
 

@@ -37,9 +37,10 @@ class ConnectionManager:
         for websocket in connections.copy():
             try:
                 await websocket.send_json(message)
-                log_info("WebSocket message sent successfully")
             except Exception as e:
+                log_info(f"==========================================")
                 log_info(f"WebSocket broadcast failed: {repr(e)}")
+                log_info(f"==========================================")
                 self.disconnect(group_id, websocket)
 
     async def broadcast_except(

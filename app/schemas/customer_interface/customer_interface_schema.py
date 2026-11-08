@@ -1,10 +1,15 @@
+import decimal
 from decimal import Decimal
 from datetime import datetime
 from typing import Literal
 
 from ...core.base_schema import BaseSchema
+from ..restaurant.restaurant_table_schema import DiningSessionWithTableData
 
 from pydantic import Field, ConfigDict
+
+class OrderStatusRequest(BaseSchema):
+    status : Literal["pending", "preparing", "ready"]
 
 
 class CustomerCartRequest(BaseSchema):
@@ -14,6 +19,18 @@ class CustomerCartRequest(BaseSchema):
     quantity: int = Field(gt=0)
     specialRequest : str = ''
 
+class OrderItem(BaseSchema):
+    id:int
+    order_id: int
+    menu_item_id: int
+    item_name: str
+    unit_price:Decimal
+    quantity: int
+    special_request: str | None
+    subtotal: Decimal
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class CustomerOrderData(BaseSchema):
     id: int
@@ -24,6 +41,15 @@ class CustomerOrderData(BaseSchema):
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class CustomerOrderWithItemData(CustomerOrderData):
+    items: list[OrderItem]
+    dining_session : DiningSessionWithTableData
+
+
+class GetOrdersResponse(BaseSchema):
+    success: bool
+    data: list[CustomerOrderWithItemData]
 
 
 
