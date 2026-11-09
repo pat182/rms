@@ -1,3 +1,5 @@
+from sqlalchemy.orm import selectinload
+
 from app.core.base_repo import BaseRepo
 
 from sqlalchemy import select
@@ -12,6 +14,24 @@ class RestaurantTableRepo(BaseRepo):
     @property
     def model(self):
         return RestaurantTable
+
+    async def get_by_id_with_sesh(self, _id: int,restaurant_id) -> RestaurantTable | None:
+        stmt = (
+            select(self.model)
+            .where(
+                self.model.id == _id,
+                self.model.restaurant_id == restaurant_id,
+            )
+            .options(
+                selectinload(
+                    self.model.dining_sessions.and_(
+                        DiningSession.status.in_(["verified", "pending"])
+                    )
+                )
+            )
+        )
+
+        return await self.db.scalar(stmt)
 
     async def get_dinning_sesh(self, session_token: str) -> DiningSession | None:
         sesh = (await self.db.execute(
