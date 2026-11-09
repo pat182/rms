@@ -149,17 +149,20 @@ async def delete_table(
     table_id: int,
     table_service: RestaurantTableService = Depends(get_restaurant_table_service),
     restaurant=Depends(require_role("owner")),
+    db: AsyncSession = Depends(get_db),
 ):
     try:
         await table_service.delete_resto_table(table_id,restaurant.id)
-
+        await db.commit()
         return {
             "success": True,
             "data" : "Restaurant table deleted successfully"
         }
     except HTTPException:
+        await db.rollback()
         raise
     except Exception:
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Failed to delete restaurant table",
