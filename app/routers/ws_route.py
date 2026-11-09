@@ -60,6 +60,14 @@ async def order_status_update(
     except WebSocketDisconnect:
         manager.disconnect(group_id, websocket)
 
+
+@router.websocket("/ws/dining-session/{session_token}")
+async def dining_session_status(
+    websocket: WebSocket,
+
+):
+    pass
+
 @router.websocket("/ws/kitchen-orders/{restaurant_id}")
 async def kitchen_orders(
     websocket: WebSocket,

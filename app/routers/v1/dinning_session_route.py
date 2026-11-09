@@ -1,6 +1,9 @@
 from typing import Optional, Literal
 from datetime import datetime
 
+from fastapi.encoders import jsonable_encoder
+
+from ...core.websocket import manager
 from ...dependencies.restaurant_dependencies import (get_restaurant_table_service,get_dining_session_service)
 from ...model import Restaurant
 from ...core.dependencies import get_db
@@ -66,12 +69,24 @@ async def update_dinning_sesh_status(
         db: AsyncSession = Depends(get_db),
         restaurant=Depends(require_role("owner")),
 ):
+
     try:
         dining_sesh = await table_service.update_table_sesh_status(
             session_token,
             payload,
         )
         await db.commit()
+        #
+        await manager.broadcast(
+            f"kitchen_orders:{restaurant.id}",
+            jsonable_encoder({
+                "event": "dining_session_status_updated",
+                "data": {
+                    "session_token": dining_sesh.session_token,
+                    "status": dining_sesh.status,
+                },
+            }),
+        )
 
         return {
             "success": True,
