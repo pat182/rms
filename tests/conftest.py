@@ -52,6 +52,7 @@ def auth_user():
     return SimpleNamespace(
         id=1,
         role_id=1,
+        role=SimpleNamespace(role_name="owner"),
         email="test@example.com",
         first_name="Test",
         last_name="User",

@@ -6,7 +6,8 @@ from ...model import Restaurant
 from ...core.dependencies import get_db
 from ...dependencies import (
     get_authenticated_user,
-    get_current_restaurant
+    get_current_restaurant,
+    require_role
 )
 from ...model.repositories import DiningSessionRepo
 from ...schemas import PaginatedResponse
@@ -21,15 +22,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(
     prefix="/v1/dining-session",
     tags=["Dinning Sessions"],
-    dependencies=[
+    # dependencies=[
         # Depends(get_authenticated_user),
-        Depends(get_current_restaurant)],
+        # Depends(get_current_restaurant)],
 )
 
 @router.get("",response_model=PaginatedResponse[DiningSessionWithTableData])
 async def dining_sesh_index(
     request : Request,
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant=Depends(require_role("owner")),
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1),
     sort_by: Optional[
@@ -63,6 +64,7 @@ async def update_dinning_sesh_status(
         payload : CreateSeshStatusRequest,
         table_service: RestaurantTableService = Depends(get_restaurant_table_service),
         db: AsyncSession = Depends(get_db),
+        restaurant=Depends(require_role("owner")),
 ):
     try:
         dining_sesh = await table_service.update_table_sesh_status(

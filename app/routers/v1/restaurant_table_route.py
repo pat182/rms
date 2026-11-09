@@ -15,7 +15,7 @@ from ...schemas.restaurant import (
 )
 from ...dependencies import (
     get_authenticated_user,
-    get_current_restaurant
+    get_current_restaurant, require_role
 )
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +32,7 @@ router = APIRouter(
 
 @router.get("",response_model=PaginatedResponse[TableWithDinningSessionData])
 async def index(
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant=Depends(require_role("owner")),
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1),
     db: AsyncSession = Depends(get_db),
@@ -71,7 +71,7 @@ async def index(
 @router.post("",response_model=CreateRestoTableResponse)
 async def create_restaurant_table(
     payload : list[CreateRestoRequest],
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant=Depends(require_role("owner")),
     table_service: RestaurantTableService = Depends(get_restaurant_table_service),
     db: AsyncSession = Depends(get_db),
 
@@ -98,7 +98,7 @@ async def create_restaurant_table(
 async def update_resto_table(
     table_id: int,
     payload: CreateRestoRequest,
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant=Depends(require_role("owner")),
     table_service: RestaurantTableService = Depends(get_restaurant_table_service),
     db: AsyncSession = Depends(get_db),
 ):

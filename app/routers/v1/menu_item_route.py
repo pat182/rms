@@ -1,7 +1,7 @@
 from ...core.dependencies import get_db
 from ...dependencies import (
-    get_authenticated_user,get_menu_item_service,
-    get_current_restaurant
+    get_authenticated_user, get_menu_item_service,
+    get_current_restaurant, require_role
 )
 from ...model import User, Restaurant
 from ...schemas import (CreateMenuItemRequest, CreateMenuItemResponse)
@@ -24,7 +24,7 @@ async def create_menu_item(
     menu_id: int,
     payload: list[CreateMenuItemRequest],
     db: AsyncSession = Depends(get_db),
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant: Restaurant = Depends(require_role("owner")),
     item_service: MenuItemService = Depends(get_menu_item_service)
 ):
 
@@ -54,7 +54,8 @@ async def create_menu_item(
 @router.post("/{menu_item_id}/menu-item-image")
 async def upload_menu_item_image(
         menu_item_id: int,
-        restaurant: Restaurant = Depends(get_current_restaurant),
+
+        restaurant: Restaurant = Depends(require_role("owner")),
         file: UploadFile = File(...),db: AsyncSession = Depends(get_db)
 ):
     fss = get_file_storage_service()
@@ -109,7 +110,7 @@ async def upload_menu_item_image(
 async def delete_menu_item_image(
     menu_item_id: int,
     request: Request,
-    restaurant: Restaurant = Depends(get_current_restaurant),
+    restaurant=Depends(require_role("owner")),
     db: AsyncSession = Depends(get_db),
     item_service: MenuItemService = Depends(get_menu_item_service),
 
