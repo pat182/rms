@@ -84,11 +84,9 @@ def test_update_dining_session_status_success(
     table_client,
     table_service,
     db,
+    dining_session_mock,
 ):
-    table_service.update_table_sesh_status.return_value = {
-        "id": 3,
-        "status": "verified",
-    }
+    table_service.update_table_sesh_status.return_value = dining_session_mock
 
     response = table_client.patch(
         "/v1/dining-session/dummy-session-token/status",
@@ -98,8 +96,13 @@ def test_update_dining_session_status_success(
     assert response.status_code == 200
     assert response.json() == {
         "success": True,
-        "data": {"id": 3, "status": "verified"},
+        "data": {
+            "id": 3,
+            "session_token": "dummy-session-token",
+            "status": "verified",
+        },
     }
+
     session_token, payload = (
         table_service.update_table_sesh_status.await_args.args
     )

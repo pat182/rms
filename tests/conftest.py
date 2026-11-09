@@ -131,3 +131,11 @@ def auth_client(monkeypatch, db):
     with TestClient(app) as test_client:
         yield test_client
 
+@pytest.fixture
+def dining_session_mock():
+    return SimpleNamespace(
+        id=3,
+        session_token="dummy-session-token",
+        status="verified",
+    )
+
