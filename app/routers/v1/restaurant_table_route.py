@@ -144,4 +144,25 @@ async def show(
         )
 
 
+@router.delete("/{table_id}")
+async def delete_table(
+    table_id: int,
+    table_service: RestaurantTableService = Depends(get_restaurant_table_service),
+    restaurant=Depends(require_role("owner")),
+):
+    try:
+        await table_service.delete_resto_table(table_id,restaurant.id)
+
+        return {
+            "success": True,
+            "data" : "Restaurant table deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete restaurant table",
+        )
+
 

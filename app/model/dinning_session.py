@@ -13,7 +13,7 @@ class DiningSession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     restaurant_table_id: Mapped[int] = mapped_column(
-        ForeignKey("restaurant_tables.id", ondelete="CASCADE"),
+        ForeignKey("restaurant_tables.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
