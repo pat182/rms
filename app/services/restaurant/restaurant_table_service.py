@@ -43,34 +43,51 @@ class RestaurantTableService:
 
         await self.db.delete(table)
 
-
     async def create_resto_table(
-            self,restaurant: Restaurant,
-            payload:list[CreateRestoRequest],
-    )-> list[RestaurantTable]:
+            self,
+            restaurant: Restaurant,
+            payload: list[CreateRestoRequest],
+    ) -> list[RestaurantTable]:
 
-        resto_tables : list[RestaurantTable] = []
+        names = [item.table_name.strip().lower() for item in payload]
 
-        for resto in payload:
-
-            resto_table = self.model(
-                restaurant_id=restaurant.id,
-                table_name=resto.table_name,
-                capacity=resto.capacity,
-                is_active=True
+        # Check duplicates within the request
+        if len(names) != len(set(names)):
+            raise HTTPException(
+                status_code=409,
+                detail="Duplicate table names in the request.",
             )
-            resto_tables.append(resto_table)
+
+        # Check existing table names in this restaurant
+        existing = await self.repo.check_table_name(names, restaurant.id)
+
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail="One or more table names already exist.",
+            )
+
+        resto_tables = [
+            self.model(
+                restaurant_id=restaurant.id,
+                table_name=item.table_name.strip(),
+                capacity=item.capacity,
+                is_active=True,
+            )
+            for item in payload
+        ]
 
         self.db.add_all(resto_tables)
 
         return resto_tables
 
     async def update_resto_table(
-        self,
-        table_id: int,
-        payload: CreateRestoRequest,
-        restaurant_id: int,
+            self,
+            table_id: int,
+            payload: CreateRestoRequest,
+            restaurant_id: int,
     ) -> RestaurantTable:
+
         table = await self.repo.get_by_id(table_id, restaurant_id)
 
         if table is None:
@@ -79,7 +96,21 @@ class RestaurantTableService:
                 detail="Restaurant table not found",
             )
 
-        table.table_name = payload.table_name
+        table_name = payload.table_name.strip()
+
+        existing = await self.repo.check_table_name(
+            [table_name.lower()],
+            restaurant_id,
+            exclude_id=table_id,
+        )
+
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Table name '{table_name}' already exists.",
+            )
+
+        table.table_name = table_name
         table.capacity = payload.capacity
         table.is_active = payload.is_active
 

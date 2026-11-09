@@ -3,13 +3,21 @@ from datetime import datetime
 
 from ..core.database import Base
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func,Index,text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 
 class RestaurantTable(Base):
     __tablename__ = 'restaurant_tables'
+    __table_args__ = (
+        Index(
+            "uq_restaurant_tables_restaurant_id_lower_name",
+            "restaurant_id",
+            func.lower(text("table_name")),
+            unique=True,
+        ),
+    )
     __mapper_args__ = {"eager_defaults": True}
     id: Mapped[int] = mapped_column(
         primary_key=True

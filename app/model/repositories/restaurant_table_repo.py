@@ -2,7 +2,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.base_repo import BaseRepo
 
-from sqlalchemy import select
+from sqlalchemy import select,func
 
 from app.model import RestaurantTable, DiningSession
 
@@ -41,6 +41,23 @@ class RestaurantTableRepo(BaseRepo):
 
         return sesh.scalar_one_or_none()
 
+    async def check_table_name(
+            self,
+            names: list[str],
+            restaurant_id: int,
+            exclude_id: int | None = None,
+    ) -> int | None:
+
+        stmt = select(self.model.id).where(
+            self.model.restaurant_id == restaurant_id,
+            func.lower(self.model.table_name).in_(names),
+        )
+
+        if exclude_id is not None:
+            stmt = stmt.where(self.model.id != exclude_id)
+
+        return await self.db.scalar(stmt.limit(1))
+
     def apply_custom_sorting(self, stmt, sort_by, sort_order):
         if sort_by == "has_active_session":
             has_active_session = (
@@ -60,3 +77,5 @@ class RestaurantTableRepo(BaseRepo):
             )
 
         return stmt
+
+
