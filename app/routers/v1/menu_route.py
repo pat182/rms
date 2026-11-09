@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 from ...core.dependencies import get_db
 from ...dependencies import (
-    get_authenticated_user,get_menu_service, get_menu_item_service, get_menu_category_service,get_current_restaurant
+    get_menu_service, get_menu_item_service, get_menu_category_service, get_current_restaurant, require_role
 )
 from ...model import User, Restaurant
 from ...schemas import (
@@ -24,12 +24,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(
     prefix="/v1/menus",
     tags=["Menus"],
-    # dependencies=[Depends(get_authenticated_user)],
 )
 
 @router.get("",response_model=PaginatedResponse[MenuData])
 async def index(
-        restaurant: Restaurant = Depends(get_current_restaurant),
+        restaurant=Depends(require_role("owner")),
         page:int=Query(1,ge=1),
         page_size:int=Query(25,ge=1),
         db: AsyncSession = Depends(get_db),
@@ -40,12 +39,13 @@ async def index(
     menu_repo = MenuRepository(db)
 
     menu, total = await menu_repo.filter(page, page_size, sort_by, sort_order, search,restaurant.id)
+
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=menu)
 
 @router.get("/{menu_id}",response_model=MenuResponse)
 async def get_menu(
         menu_id:int ,
-        restaurant: Restaurant = Depends(get_current_restaurant),
+        restaurant=Depends(require_role("owner")),
         menu_service: MenuService = Depends(get_menu_service)
 ):
     try:
@@ -69,7 +69,7 @@ async def update_status(
         payload: UpdateMenuStatusRequest,
         db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service),
-        restaurant: Restaurant = Depends(get_current_restaurant),
+        restaurant=Depends(require_role("owner")),
 ):
 
         try:
@@ -97,7 +97,7 @@ async def create_menu(
         payload: CreateMenuRequest,
         db: AsyncSession = Depends(get_db),
         menu_service: MenuService = Depends(get_menu_service),
-        restaurant: Restaurant = Depends(get_current_restaurant)
+        restaurant=Depends(require_role("owner")),
 ):
 
     try:
@@ -123,7 +123,7 @@ async def create_menu(
 @router.post("/complete", response_model=CreateCompleteMenuResponse)
 async def create_menu_complete(
         payload: CreateCompleteMenuRequest,
-        restaurant: Restaurant = Depends(get_current_restaurant),
+        restaurant:Restaurant=Depends(require_role("owner")),
         menu_service: MenuService = Depends(get_menu_service),
         db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
@@ -154,7 +154,7 @@ async def update_complete(
         menu_id: int,
         payload : UpdateCompleteMenuRequest,
         menu_service: MenuService = Depends(get_menu_service),
-        restaurant: Restaurant = Depends(get_current_restaurant),
+        restaurant: Restaurant = Depends(require_role("owner")),
         db: AsyncSession = Depends(get_db),
         item_service: MenuItemService = Depends(get_menu_item_service),
         category_service: MenuCategoryService = Depends(get_menu_category_service)

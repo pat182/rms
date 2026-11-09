@@ -1,7 +1,7 @@
 from typing import Literal, Optional
 
 from ...dependencies import get_authenticated_user
-from ...model import User, Restaurant
+from ...model import User, Restaurant, RestaurantUser
 from ...schemas import PaginatedResponse
 from ...schemas.restaurant import (
     CreateRestaurantRequest,
@@ -30,13 +30,20 @@ async def index(
     sort_by: Optional[Literal["restaurant_name", "created_at", "updated_at"]] = Query(None),
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
     search: Optional[str] = Query(None),
-
+    auth_user: User = Depends(get_authenticated_user),
 ):
     resto_repo = RestaurantRepository(db)
 
-    restaurants, total = await resto_repo.filter(page, page_size, sort_by, sort_order, search,relationships=[
-        Restaurant.country,
-    ])
+    restaurants, total = await resto_repo.filter(page, page_size, sort_by, sort_order, search,
+        relationships=[
+            Restaurant.country,
+        ],
+        filters=[
+            Restaurant.restaurant_users.any(
+                RestaurantUser.user_id == auth_user.id
+            )
+        ]
+    )
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=restaurants)
 
 
