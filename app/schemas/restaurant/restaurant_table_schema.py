@@ -61,3 +61,7 @@ class CreateRestoTableResponse(BaseSchema):
 class UpdateRestoTableResponse(BaseSchema):
     success: bool
     data: DefaultRestoTable
+
+class ShowRestoTableResponse(BaseSchema):
+    success: bool
+    data: DefaultRestoTable

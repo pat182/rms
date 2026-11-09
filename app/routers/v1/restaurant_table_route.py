@@ -11,7 +11,7 @@ from ...schemas.restaurant import (
     CreateRestoRequest,
     CreateRestoTableResponse,
     CreateSeshStatusRequest,
-    UpdateRestoTableResponse, TableWithDinningSessionData,
+    UpdateRestoTableResponse, TableWithDinningSessionData, ShowRestoTableResponse,
 )
 from ...dependencies import (
     get_authenticated_user,
@@ -122,4 +122,26 @@ async def update_resto_table(
             status_code=500,
             detail="Failed to update restaurant table",
         )
+
+@router.get("/{table_id}",response_model=ShowRestoTableResponse)
+async def show(
+    table_id: int,
+    restaurant=Depends(require_role("owner")),
+    table_service: RestaurantTableService = Depends(get_restaurant_table_service),
+):
+    try:
+        table = await table_service.get_resto_table(table_id, restaurant.id)
+        return {
+            "success": True,
+            "data": table
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch restaurant table",
+        )
+
+
 
