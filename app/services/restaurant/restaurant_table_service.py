@@ -27,6 +27,23 @@ class RestaurantTableService:
 
         return table
 
+    async def delete_resto_table(self,table_id:int,restaurant_id:int)->None:
+        table = await self.repo.get_by_id_with_sesh(table_id, restaurant_id)
+        if table is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Restaurant table not found",
+            )
+
+        if table.dining_sessions:
+            raise HTTPException(
+                status_code=400,
+                detail="Cant Delete table it has an active session",
+            )
+
+        await self.db.delete(table)
+
+
     async def create_resto_table(
             self,restaurant: Restaurant,
             payload:list[CreateRestoRequest],
