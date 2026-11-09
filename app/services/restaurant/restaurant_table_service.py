@@ -16,6 +16,17 @@ class RestaurantTableService:
         self.repo = RestaurantTableRepo(self.db)
         self.model = self.repo.model
 
+    async def get_resto_table(self,table_id:int,restaurant_id:int) -> RestaurantTable:
+        table = await self.repo.get_by_id(table_id, restaurant_id)
+
+        if table is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Restaurant table not found",
+            )
+
+        return table
+
     async def create_resto_table(
             self,restaurant: Restaurant,
             payload:list[CreateRestoRequest],
