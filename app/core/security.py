@@ -129,33 +129,68 @@ class Security:
         return payload
 
     def websocket_token_validation(self, websocket: WebSocket) -> dict:
-        token = websocket.cookies.get("access_token")
+        cookie_token = websocket.cookies.get("access_token")
+        header_token = websocket.headers.get("Authorization")
 
-        if not token:
+        if cookie_token and header_token:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Both cookie and header present",
+            )
+
+        # Browser authentication
+        if cookie_token:
+            token = cookie_token
+
+            try:
+                payload = self.decode_token(token)
+            except HTTPException:
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION,
+                    reason="Invalid or expired access token",
+                )
+
+            if payload.get("client_type") != "browser":
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION,
+                    reason="Client Mismatched",
+                )
+
+        # App authentication
+        elif header_token:
+            scheme, _, token = header_token.partition(" ")
+
+            if scheme.lower() != "bearer" or not token:
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION,
+                    reason="Invalid bearer token",
+                )
+
+            try:
+                payload = self.decode_token(token)
+            except HTTPException:
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION,
+                    reason="Invalid or expired access token",
+                )
+
+            if payload.get("client_type") != "app":
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION,
+                    reason="Token Mismatched",
+                )
+
+        else:
             raise WebSocketException(
                 code=status.WS_1008_POLICY_VIOLATION,
                 reason="Access token required",
             )
 
-        try:
-            payload = self.decode_token(token)
-
-        except HTTPException:
-            raise WebSocketException(
-                code=status.WS_1008_POLICY_VIOLATION,
-                reason="Invalid or expired access token",
-            )
-
+        # Token type validation
         if payload.get("type") != "access":
             raise WebSocketException(
                 code=status.WS_1008_POLICY_VIOLATION,
-                reason="Invalid token type",
-            )
-
-        if payload.get("client_type") != "browser":
-            raise WebSocketException(
-                code=status.WS_1008_POLICY_VIOLATION,
-                reason="Invalid client type",
+                reason="Token Type Mismatched",
             )
 
         return payload
