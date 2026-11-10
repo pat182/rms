@@ -61,18 +61,25 @@ async def order_status_update(
         manager.disconnect(group_id, websocket)
 
 
-@router.websocket("/ws/dining-session/{session_token}")
-async def dining_session_status(
-    websocket: WebSocket,
-
-):
-    pass
+# @router.websocket("/ws/dining-session/{session_token}")
+# async def dining_session_status(
+#     websocket: WebSocket,
+#
+# ):
+#     pass
 
 @router.websocket("/ws/kitchen-orders/{restaurant_id}")
 async def kitchen_orders(
     websocket: WebSocket,
     restaurant_id: int,
+    # current_user=Depends(get_authenticated_websocket_user),
 ):
+
+    from app.core.logger import log_info
+    log_info("===============================================")
+    log_info("WebSocket request received for restaurant",restaurant_id)
+    log_info("===============================================")
+    # authorize_websocket_restaurant(current_user, restaurant_id)
     group_id = f"kitchen_orders:{restaurant_id}"
 
     await manager.connect(group_id, websocket)

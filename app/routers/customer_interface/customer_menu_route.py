@@ -110,6 +110,8 @@ async def get_shared_cart(
         }
     }
 
+
+
 @router.post("/orders/{session_token}")
 async def create_order(
     payload: list[CustomerCartRequest],
@@ -207,3 +209,12 @@ async def create_order(
             status_code=500,
             detail="Internal Server Error"
         )
+
+# @router.patch("/orders/{session_token}/cancel/{order_id}")
+# async def cancel_order(
+#     order_id:int,
+#     db: AsyncSession = Depends(get_db),
+#     sesh_data : DiningSession = Depends(customer_session_dependency),
+#     order_service: CustomerOrderService = Depends(get_customer_order_service),
+# ):
+#     pass

@@ -9,7 +9,7 @@ from ...core.security import SecurityInstance
 from ...helper import set_auth_cookies,clear_auth_cookies
 from ...schemas import LoginRequest, TokenResponse, Tokens, UserHttpResponse, UsersResponseV2, AppTokens
 
-from fastapi import APIRouter, Depends,Request,Response,Cookie
+from fastapi import APIRouter, Depends, Request, Response, Cookie, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -18,6 +18,7 @@ router = APIRouter(
     prefix="/v1/auth",
     tags=["Authentication"]
 )
+
 @router.post("/app")
 async def app_login(
     response: Response,
@@ -60,11 +61,15 @@ async def login(
         csrf=token_data['csrf_token'],
     )
 
-@router.post("/refresh")
-async def refresh( response: Response,request : Request,
-             db: AsyncSession = Depends(get_db),
-             refresh_token: str = Cookie(None) ):
-    auth = AuthService(db, response, request.state.device_info)
+@router.post("/refresh",response_model=TokenResponse)
+async def refresh(
+    response: Response,request : Request,
+    db: AsyncSession = Depends(get_db),
+    refresh_token: str = Cookie(None),
+    authorization: str | None = Header(default=None),
+):
+
+    auth = AuthService(db, response, request.state.device_info,request.state.client_type)
 
     payload = SecurityInstance.token_validation(request, 'refresh')
 
@@ -82,12 +87,24 @@ async def refresh( response: Response,request : Request,
             access_exp=token_data['expires_in'],
             refresh_exp=token_data['r_expires_in']
         )
+        return TokenResponse(
+            token=token_response,
+            csrf=token_data['csrf_token'],
+            user=token_data['user']
+        )
 
-    return TokenResponse(
-        token=token_response,
-        csrf=token_data['csrf_token'],
-        user=token_data['user']
-    )
+    else:
+
+        refresh_token = authorization.split(" ", 1)[1]
+        token_data = await auth.refresh_tokens(refresh_token, payload)
+        token_response = Tokens(**token_data)
+
+        return TokenResponse(
+            token=AppTokens(**token_data),
+            user=token_response.user
+        )
+
+
 
 @router.get("/me",response_model=UserHttpResponse)
 async def me( auth_user: User = Depends(get_authenticated_user)):
