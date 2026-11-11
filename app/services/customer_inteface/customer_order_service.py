@@ -1,11 +1,11 @@
-from fastapi import HTTPException
+
 
 from ...model import DiningSession, CustomerOrder
 from ...model.repositories import CustomerOrderRepo,CustomerOrderItemRepo
-from ...schemas.customer_interface import CustomerCartRequest
+from ...schemas.customer_interface import CustomerCartRequest, OrderStatusRequest
 
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import HTTPException
 
 
 class CustomerOrderService:
@@ -55,7 +55,7 @@ class CustomerOrderService:
 
         return order
 
-    async def update_customer_order_status(self,order_id:int,status:str,restaurant_id:int):
+    async def update_customer_order_status(self,order_id:int,payload:OrderStatusRequest,restaurant_id:int)->CustomerOrder:
 
         order = await self.repo.get_by_id(order_id,restaurant_id)
 
@@ -65,9 +65,32 @@ class CustomerOrderService:
                 detail="No active menu found for this restaurant.",
             )
 
-        order.status = status
+        order.status = payload.status
+        order.cancel_reason = payload.cancel_reason
 
         return order
+
+    async def cancel_order(self,order_id:int,session_token:str) -> CustomerOrder:
+
+        order = await self.repo.get_order_by_sesh(order_id,session_token)
+
+        if order is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Customer order not found.",
+            )
+
+        if order.status != "pending":
+            raise HTTPException(
+                status_code=400,
+                detail="Customer order not found.",
+            )
+
+        order.status = "canceled"
+
+        await self.db.flush()
+        return order
+
 
 
 

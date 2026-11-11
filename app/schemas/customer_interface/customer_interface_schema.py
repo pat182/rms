@@ -9,7 +9,8 @@ from ..restaurant.restaurant_table_schema import DiningSessionWithTableData
 from pydantic import Field, ConfigDict
 
 class OrderStatusRequest(BaseSchema):
-    status : Literal["pending", "preparing", "ready", "served"]
+    status : Literal["canceled","pending", "preparing", "ready", "served"]
+    cancel_reason: str | None = None
 
 
 class CustomerCartRequest(BaseSchema):

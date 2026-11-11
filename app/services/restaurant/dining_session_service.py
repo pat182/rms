@@ -104,7 +104,6 @@ class DiningSessionService:
 
         # Validate the requested session token
         if session_token is not None:
-
             if session_token != dining_session.session_token:
                 raise HTTPException(
                     status_code=422,
