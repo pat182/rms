@@ -13,7 +13,6 @@ from app.routers.v1 import (
 )
 from app.routers.customer_interface import (
     customer_menu_router,
-    customer_socket_router
 )
 from app.routers.ws_route import router as websocket_router
 from app.routers.kitchen_interface_router import router as kitchen_interface_router
@@ -79,7 +78,6 @@ app.include_router(dinning_session_router)
 
 #=============CUSTOMER INTERFACE=============
 app.include_router(customer_menu_router)
-app.include_router(customer_socket_router)
 
 #=============KITCHEN INTERFACE=============
 app.include_router(kitchen_interface_router)

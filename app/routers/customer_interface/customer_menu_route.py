@@ -110,7 +110,44 @@ async def get_shared_cart(
         }
     }
 
+@router.post("/cart/{session_token}",)
+async def save_items(
+    # table_qr:str,
+    session_token: str,
+    payload: list[CustomerCartRequest],
+    redis: Redis = Depends(get_redis),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
+):
+    # dining_sesh, is_new = sesh_data
 
+    cart_data = [
+        {
+            **item.model_dump(mode="json"),
+            "unitPrice": float(item.unitPrice)
+        }
+        for item in payload
+    ]
+    await redis.set(
+        f"rms:cart:{session_token}",
+        json.dumps(cart_data),
+        ex=7200
+    )
+
+    await manager.broadcast(
+        f"shared_cart:{session_token}",
+        {
+            "event": "cart_updated",
+            "data": {
+                "order" : [],
+                "cart_items" : cart_data
+            }
+        }
+    )
+
+    return {
+        "success" : True,
+        "data" : session_token,
+    }
 
 @router.post("/orders/{session_token}")
 async def create_order(
@@ -210,11 +247,55 @@ async def create_order(
             detail="Internal Server Error"
         )
 
-# @router.patch("/orders/{session_token}/cancel/{order_id}")
-# async def cancel_order(
-#     order_id:int,
-#     db: AsyncSession = Depends(get_db),
-#     sesh_data : DiningSession = Depends(customer_session_dependency),
-#     order_service: CustomerOrderService = Depends(get_customer_order_service),
-# ):
-#     pass
+@router.patch("/orders/{session_token}/cancel/{order_id}")
+async def cancel_order(
+    order_id:int,
+    db: AsyncSession = Depends(get_db),
+    sesh_data : DiningSession = Depends(customer_session_dependency),
+    order_service: CustomerOrderService = Depends(get_customer_order_service),
+):
+    try:
+
+        order = await order_service.cancel_order(order_id,sesh_data.session_token)
+
+        await db.commit()
+
+        await manager.broadcast(
+            f"kitchen_orders:{order.restaurant_id}",
+            {
+                "event": "dining_session_order_canceled",
+                "data": {
+                    "id": order.id,
+                    "table_number": sesh_data.restaurant_table.id,
+                    "status": order.status,
+                    "created_at": order.created_at.isoformat() if order.created_at else None,
+                }
+            }
+        )
+
+        await manager.broadcast(
+            f"customer_session:{order.dining_session_token}",
+            jsonable_encoder({
+                "event": "order_status_updated",
+                "data": {
+                    "order_id": order.id,
+                    "status": order.status,
+                    "cancel_reason": order.cancel_reason,
+                }
+            })
+        )
+
+        return {
+            "success" : True,
+            "data" : order
+        }
+
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Internal Server Error",
+        )
