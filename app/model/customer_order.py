@@ -34,7 +34,10 @@ class CustomerOrder(Base):
         Numeric(10, 2),
         nullable=False
     )
-
+    cancel_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

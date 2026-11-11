@@ -49,7 +49,7 @@ async def update_order_status(
     order_service = Depends(get_customer_order_service)
 ):
     try:
-        order = await order_service.update_customer_order_status(order_id, payload.status,restaurant.id)
+        order = await order_service.update_customer_order_status(order_id, payload,restaurant.id)
         await db.commit()
 
         await manager.broadcast(
@@ -58,7 +58,8 @@ async def update_order_status(
                 "event": "order_status_updated",
                 "data": {
                     "order_id": order.id,
-                    "status": order.status
+                    "status": order.status,
+                    "cancel_reason": order.cancel_reason,
                 }
             })
         )
@@ -70,9 +71,9 @@ async def update_order_status(
     except HTTPException:
         await db.rollback()
         raise
-    except Exception:
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to update status",
-        )
+    # except Exception:
+    #     await db.rollback()
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail="Failed to update status",
+    #     )

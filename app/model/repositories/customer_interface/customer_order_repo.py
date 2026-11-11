@@ -15,6 +15,21 @@ class CustomerOrderRepo(BaseRepo):
     def model(self):
         return CustomerOrder
 
+    async def get_order_by_sesh(self,order_id:int, session_token:str) -> CustomerOrder | None:
+        stmt = (
+            select(self.model)
+            .options(
+                selectinload(self.model.dining_session)
+            )
+            .where(
+                self.model.id == order_id,
+                self.model.dining_session_token == session_token,
+            )
+        )
+        result = await self.db.scalar(stmt)
+
+        return result
+
     async def get_orders_by_session(self, session_token:str):
         stmt = (
             select(self.model)
