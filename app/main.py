@@ -62,7 +62,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
     allow_headers=[
-        "Authorization","Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID","X-DEVICE-TOKEN"
+        "Authorization",
+        "Accept","Content-Type","X-CSRF-Token","X-Client-Type",
+        "X-RESTAURANT-ID","X-DEVICE-TOKEN","X-DINING-SESSION-TOKEN"
     ],
 )
 #=============WEB SOCKET=============

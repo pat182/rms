@@ -96,6 +96,7 @@ class DiningSessionService:
         )
 
         dining_session = await self.db.scalar(session_stmt)
+
         if not dining_session:
             raise HTTPException(
                 status_code=404,
