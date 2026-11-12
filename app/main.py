@@ -26,7 +26,6 @@ from fastapi import FastAPI,Request
 async def lifespan(app: FastAPI):
     if not settings.TESTING:
         await connect_redis(app)
-
     try:
         yield
     finally:
@@ -62,7 +61,9 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET","POST","PUT","PATCH","DELETE","OPTIONS",],
-    allow_headers=["Authorization","Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID"],
+    allow_headers=[
+        "Authorization","Accept","Content-Type","X-CSRF-Token","X-Client-Type","X-RESTAURANT-ID","X-DEVICE-TOKEN"
+    ],
 )
 #=============WEB SOCKET=============
 app.include_router(websocket_router)
