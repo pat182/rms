@@ -30,10 +30,6 @@ class ConnectionManager:
     async def broadcast(self, group_id: str, message: dict):
         connections = self.active_connections.get(group_id, [])
 
-        # log_info(f"==========================================")
-        # log_info("Broadcast group:", group_id)
-        # log_info("Connected clients:", len(connections))
-        # log_info(f"==========================================")
         for websocket in connections.copy():
             try:
                 await websocket.send_json(message)

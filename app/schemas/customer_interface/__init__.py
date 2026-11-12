@@ -4,5 +4,7 @@ __all__ = [
     "CustomerCartRequest",
     "CustomerOrderWithItemData",
     "GetOrdersResponse",
-    "OrderStatusRequest"
+    "OrderStatusRequest",
+    "JoinRequestApproval",
+    "CustomerOrderData"
 ]
