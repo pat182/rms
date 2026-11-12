@@ -33,55 +33,72 @@ async def customer_session_dependency(
 async def get_or_create_dining_session(
     table_qr: str,
     device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
+    session_token: str | None = Header(
+        None,
+        alias="X-DINING-SESSION-TOKEN",
+    ),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis),
-) -> tuple[DiningSession, bool, bool]:
+) -> tuple[DiningSession, bool, bool, bool]:
 
     table_service = RestaurantTableService(db)
+    session_service = DiningSessionService(db)
 
     table = await table_service.validate_table_qr_token(table_qr)
 
-    session_stmt = (
-        select(DiningSession)
-        .options(
-            selectinload(DiningSession.restaurant_table)
-            .selectinload(RestaurantTable.restaurant)
+    is_new = False
+
+    # Try the supplied session token first.
+    dining_session = None
+
+    if session_token:
+        try:
+            dining_session = await session_service.validate_session(
+                session_token,
+                table.id,
+            )
+        except HTTPException as exc:
+            if exc.status_code != 404:
+                raise
+
+    # If the supplied token is invalid or missing, find the current table session.
+    if not dining_session:
+        session_stmt = (
+            select(DiningSession)
+            .options(
+                selectinload(DiningSession.restaurant_table)
+                .selectinload(RestaurantTable.restaurant)
+            )
+            .where(
+                DiningSession.restaurant_table_id == table.id,
+                DiningSession.is_active.is_(True),
+                DiningSession.status.in_(["verified", "pending"]),
+            )
         )
-        .where(
-            DiningSession.restaurant_table_id == table.id,
-            DiningSession.is_active.is_(True),
-            DiningSession.status.in_(["verified", "pending"]),
-        )
-    )
 
-    dining_session = await db.scalar(session_stmt)
+        dining_session = await db.scalar(session_stmt)
 
-    if dining_session:
-        is_new = False
-        owner_device_token = await redis.get(
-            f"rms:dining_session:{dining_session.session_token}:owner"
-        )
-        is_owner = owner_device_token == device_token
-        # from app.core.logger import log_info
-        # log_info("===============================================")
-        # log_info(f"DEVICE TOKEN: {device_token}")
-        # log_info(f"OWNER TOKEN: {owner_device_token}")
-        # log_info(f"SESSION TOKEN: {dining_session.session_token}")
-        # log_info(f"IS OWNER: {is_owner}")
-        # log_info("===============================================")
-
-    else:
-
+    # Create a session only when no active session exists.
+    if not dining_session:
         dining_session = DiningSession(
             restaurant_table_id=table.id,
             is_active=True,
         )
-        # from app.core.logger import log_info
-        # log_info(f"NEW SESSION OWNER REGISTERED: {device_token}")
-        # log_info(f"NEW SESSION TOKEN: {dining_session.session_token}")
 
         db.add(dining_session)
-        await db.commit()
+        await db.flush()
+
+        owner_key = (
+            f"rms:dining_session:{dining_session.session_token}:owner"
+        )
+
+        try:
+            await redis.set(owner_key, device_token, ex=10800)
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            await redis.delete(owner_key)
+            raise
 
         dining_session = await db.scalar(
             select(DiningSession)
@@ -93,11 +110,21 @@ async def get_or_create_dining_session(
         )
 
         is_new = True
-        is_owner = True
-        await redis.set(
-            f"rms:dining_session:{dining_session.session_token}:owner",
-            device_token,
-            ex=10800,
+
+    # Check ownership and approval in one place.
+    owner_device_token = await redis.get(
+        f"rms:dining_session:{dining_session.session_token}:owner"
+    )
+
+    is_owner = owner_device_token == device_token
+
+    if is_owner:
+        is_approved = True
+    else:
+        is_approved = bool(
+            await redis.exists(
+                f"rms:dining_session:{dining_session.session_token}:approved:{device_token}"
+            )
         )
 
-    return dining_session, is_new, is_owner
+    return dining_session, is_new, is_owner, is_approved
