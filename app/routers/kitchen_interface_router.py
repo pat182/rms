@@ -71,9 +71,9 @@ async def update_order_status(
     except HTTPException:
         await db.rollback()
         raise
-    # except Exception:
-    #     await db.rollback()
-    #     raise HTTPException(
-    #         status_code=500,
-    #         detail="Failed to update status",
-    #     )
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update status",
+        )

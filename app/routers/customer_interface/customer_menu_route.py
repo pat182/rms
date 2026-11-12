@@ -1,4 +1,5 @@
 import json
+import secrets
 from redis.asyncio import Redis
 
 from ...core.websocket import manager
@@ -8,15 +9,14 @@ from ...dependencies.customer_interface import get_or_create_dining_session, get
 from ...dependencies.menu_dependencies.menu_dependecies import get_menu_service, get_menu_item_service
 from ...model import DiningSession
 from ...model.repositories import CustomerOrderRepo
-from ...schemas.customer_interface.customer_interface_schema import CustomerOrderData
 from ...schemas.menu.menu_item_schema import MenuItemData, MenuItemResponse
-from ...schemas.customer_interface import CustomerCartRequest
+from ...schemas.customer_interface import CustomerCartRequest, CustomerOrderData, JoinRequestApproval
 from ...services import MenuService
 from ...services.menu.menu_item_service import MenuItemService
 from ...services.customer_inteface import CustomerOrderService
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(
@@ -28,10 +28,10 @@ router = APIRouter(
 
 @router.get("")
 async def get_menu(
-    sesh_data : tuple[DiningSession,bool] = Depends(get_or_create_dining_session),
+    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
     menu_service : MenuService = Depends(get_menu_service)
 ):
-    dining_sesh, is_new = sesh_data
+    dining_sesh, is_new, is_owner = sesh_data
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
@@ -63,11 +63,205 @@ async def get_menu(
         'success': True,
         'data': {
             "is_new" : is_new,
-            "dinning_session_token" : dining_sesh.session_token,
+            "is_owner": is_owner,
+            "dinning_session_token": dining_sesh.session_token if is_owner else None,
             "restaurant_id" : restaurant.id,
             "restaurant_name" : restaurant.restaurant_name,
-            "menu" : menu_data
+            "menu" : menu_data,
         }
+    }
+
+
+@router.post("/join-request")
+async def request_to_join(
+    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
+    redis: Redis = Depends(get_redis),
+):
+    dining_sesh, is_new, is_owner = sesh_data
+
+    if is_owner:
+        raise HTTPException(
+            status_code=400,
+            detail="You are already the session owner.",
+        )
+
+    request_token = secrets.token_urlsafe(16)
+
+    request_key = (
+        f"rms:dining_session:{dining_sesh.session_token}:"
+        f"request:{request_token}"
+    )
+
+    # Store requesting device temporarily (5 minutes).
+    await redis.set(
+        request_key,
+        device_token,
+        ex=300,
+    )
+
+    # Notify the session owner.
+    await manager.broadcast(
+        f"dining_session:{dining_sesh.session_token}",
+        {
+            "event": "join_request",
+            "data": {
+                "request_token": request_token,
+            },
+        },
+    )
+
+    return {
+        "success": True,
+        "data": {
+            "request_token": request_token,
+            "status": "pending",
+        },
+    }
+
+
+@router.post("/join-request/approval")
+async def approve_join_request(
+    table_qr: str,
+    payload: JoinRequestApproval,
+    device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
+    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    redis: Redis = Depends(get_redis),
+):
+    dining_sesh, _, is_owner = sesh_data
+
+    if not is_owner:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the session owner can approve join requests.",
+        )
+
+    request_key = (
+        f"rms:dining_session:{dining_sesh.session_token}:"
+        f"request:{payload.request_token}"
+    )
+
+    requesting_device = await redis.get(request_key)
+
+    if not requesting_device:
+        raise HTTPException(
+            status_code=404,
+            detail="Join request not found or expired.",
+        )
+
+    status = "approved" if payload.approved else "rejected"
+
+    # Grant the requesting device access for 3 hours.
+    if payload.approved:
+        await redis.set(
+            f"rms:dining_session:{dining_sesh.session_token}:approved:{requesting_device}",
+            "1",
+            ex=10800,
+        )
+
+    result_key = (
+        f"rms:dining_session:{dining_sesh.session_token}:"
+        f"result:{payload.request_token}"
+    )
+
+    await redis.set(
+        result_key,
+        json.dumps({
+            "status": status,
+            "device_token": requesting_device,
+        }),
+        ex=300,
+    )
+
+    # Remove the pending request.
+    await redis.delete(request_key)
+
+    # Notify the requesting guest through their WebSocket.
+    await manager.broadcast(
+        f"join_request:{payload.request_token}",
+        {
+            "event": "join_request_result",
+            "data": {
+                "request_token": payload.request_token,
+                "status": status,
+                "session_token": (
+                    dining_sesh.session_token
+                    if status == "approved"
+                    else None
+                ),
+            },
+        },
+    )
+
+    return {
+        "success": True,
+        "data": {
+            "request_token": payload.request_token,
+            "status": status,
+        },
+    }
+
+@router.get("/join-request/status/{request_token}")
+async def get_join_request_status(
+    table_qr: str,
+    request_token: str,
+    device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
+    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    redis: Redis = Depends(get_redis),
+):
+    dining_sesh, _, _ = sesh_data
+
+    result_key = (
+        f"rms:dining_session:{dining_sesh.session_token}:"
+        f"result:{request_token}"
+    )
+
+    result = await redis.get(result_key)
+
+
+    if not result:
+        request_key = (
+            f"rms:dining_session:{dining_sesh.session_token}:"
+            f"request:{request_token}"
+        )
+
+        requesting_device = await redis.get(request_key)
+
+        if requesting_device != device_token:
+            raise HTTPException(
+                status_code=404,
+                detail="Join request not found or expired.",
+            )
+
+        return {
+            "success": True,
+            "data": {
+                "status": "pending",
+                "session_token": None,
+            },
+        }
+
+    # Verify that this device submitted the request.
+    result_data = json.loads(result)
+
+    if result_data["device_token"] != device_token:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to access this join request.",
+        )
+
+    status = result_data["status"]
+
+    return {
+        "success": True,
+        "data": {
+            "status": status,
+            "session_token": (
+                dining_sesh.session_token
+                if status == "approved"
+                else None
+            ),
+        },
     }
 
 
@@ -88,6 +282,7 @@ async def get_menu_item(
         "data": MenuItemData.model_validate(item),
     }
 
+
 @router.get("/shared-cart/{session_token}")
 async def get_shared_cart(
     sesh_data : DiningSession = Depends(customer_session_dependency),
@@ -95,20 +290,30 @@ async def get_shared_cart(
     db : AsyncSession = Depends(get_db)
 
 ):
-    dining_sesh = sesh_data
+    try:
+        dining_sesh = sesh_data
 
-    cart_items = await redis.get(f"rms:cart:{dining_sesh.session_token}")
+        cart_items = await redis.get(f"rms:cart:{dining_sesh.session_token}")
 
-    order_repo = CustomerOrderRepo(db)
-    orders = await order_repo.get_orders_by_session(dining_sesh.session_token)
+        order_repo = CustomerOrderRepo(db)
+        orders = await order_repo.get_orders_by_session(dining_sesh.session_token)
 
-    return {
-        "success": True,
-        "data": {
-            "cart_items" :  json.loads(cart_items) if cart_items else [],
-            "orders" : orders
+        return {
+            "success": True,
+            "data": {
+                "cart_items" :  json.loads(cart_items) if cart_items else [],
+                "orders" : orders
+            }
         }
-    }
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Internal Server Error, Failed to fetch cart items",
+        )
+
 
 @router.post("/cart/{session_token}",)
 async def save_items(
@@ -148,6 +353,7 @@ async def save_items(
         "success" : True,
         "data" : session_token,
     }
+
 
 @router.post("/orders/{session_token}")
 async def create_order(
@@ -246,6 +452,7 @@ async def create_order(
             status_code=500,
             detail="Internal Server Error"
         )
+
 
 @router.patch("/orders/{session_token}/cancel/{order_id}")
 async def cancel_order(
