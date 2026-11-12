@@ -28,10 +28,11 @@ router = APIRouter(
 
 @router.get("")
 async def get_menu(
-    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
-    menu_service : MenuService = Depends(get_menu_service)
+    sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
+    menu_service : MenuService = Depends(get_menu_service),
+
 ):
-    dining_sesh, is_new, is_owner = sesh_data
+    dining_sesh, is_new, is_owner,is_approved = sesh_data
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
@@ -63,8 +64,9 @@ async def get_menu(
         'success': True,
         'data': {
             "is_new" : is_new,
+            "is_approved" : is_approved,
             "is_owner": is_owner,
-            "dinning_session_token": dining_sesh.session_token if is_owner else None,
+            "dinning_session_token": dining_sesh.session_token,
             "restaurant_id" : restaurant.id,
             "restaurant_name" : restaurant.restaurant_name,
             "menu" : menu_data,
@@ -74,11 +76,11 @@ async def get_menu(
 
 @router.post("/join-request")
 async def request_to_join(
-    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
     device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
     redis: Redis = Depends(get_redis),
 ):
-    dining_sesh, is_new, is_owner = sesh_data
+    dining_sesh, is_new, is_owner,_ = sesh_data
 
     if is_owner:
         raise HTTPException(
@@ -87,6 +89,7 @@ async def request_to_join(
         )
 
     request_token = secrets.token_urlsafe(16)
+
 
     request_key = (
         f"rms:dining_session:{dining_sesh.session_token}:"
@@ -125,10 +128,10 @@ async def approve_join_request(
     table_qr: str,
     payload: JoinRequestApproval,
     device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
-    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
     redis: Redis = Depends(get_redis),
 ):
-    dining_sesh, _, is_owner = sesh_data
+    dining_sesh, _, is_owner,_ = sesh_data
 
     if not is_owner:
         raise HTTPException(
@@ -201,15 +204,16 @@ async def approve_join_request(
         },
     }
 
+
 @router.get("/join-request/status/{request_token}")
 async def get_join_request_status(
     table_qr: str,
     request_token: str,
     device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
-    sesh_data: tuple[DiningSession, bool, bool] = Depends(get_or_create_dining_session),
+    sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
     redis: Redis = Depends(get_redis),
 ):
-    dining_sesh, _, _ = sesh_data
+    dining_sesh, _, _,_ = sesh_data
 
     result_key = (
         f"rms:dining_session:{dining_sesh.session_token}:"
