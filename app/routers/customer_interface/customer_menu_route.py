@@ -327,8 +327,11 @@ async def save_items(
     redis: Redis = Depends(get_redis),
     sesh_data : DiningSession = Depends(customer_session_dependency),
 ):
-    # dining_sesh, is_new = sesh_data
-
+    # dining_sesh  = sesh_data
+    from app.core.logger import log_info
+    log_info("====================================")
+    log_info("PUKHET THAILAND")
+    log_info("====================================")
     cart_data = [
         {
             **item.model_dump(mode="json"),

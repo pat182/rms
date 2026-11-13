@@ -1,17 +1,28 @@
+from redis.asyncio import Redis
 from datetime import datetime
+
+from ...dependencies import get_redis
 from ...model import (RestaurantTable)
 from ...model.repositories import DiningSessionRepo
 
-from fastapi import HTTPException,Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from fastapi import HTTPException,Request,Depends
 
 class DiningSessionService:
     def __init__(self,db: AsyncSession):
         self.db = db
         self.repo = DiningSessionRepo(self.db)
         self.model = self.repo.model
+
+
+    async def check_session_ownership(self,session_token: str, device_token: str | None ,redis: Redis)-> bool:
+        owner_device_token = await redis.get(
+            f"rms:dining_session:{session_token}:owner"
+        )
+
+        return owner_device_token == device_token
 
     async def generate_filter(
             self,
