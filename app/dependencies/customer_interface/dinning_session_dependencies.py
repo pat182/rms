@@ -14,7 +14,9 @@ from fastapi import Depends, HTTPException, Header
 async def customer_session_dependency(
     table_qr:str,
     session_token: str,
+    device_token: str = Header(..., alias="X-DEVICE-TOKEN"),
     db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
 )->DiningSession:
 
     table_service = RestaurantTableService(db)
@@ -25,6 +27,22 @@ async def customer_session_dependency(
 
     dining_session = await dining_session_service.validate_session(session_token,table.id)
 
+    is_owner = await dining_session_service.check_session_ownership(dining_session.session_token, device_token,redis)
+
+    is_approved = await redis.exists(
+        f"rms:dining_session:{dining_session.session_token}:approved:{device_token}"
+    )
+
+    if not is_owner and not is_approved:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to access this dining session.",
+        )
+
+    # from app.core.logger import log_info
+    # log_info("====================================")
+    # log_info("CUSTOMER:", customer)
+    # log_info("====================================")
     return dining_session
 
 
@@ -112,11 +130,7 @@ async def get_or_create_dining_session(
         is_new = True
 
     # Check ownership and approval in one place.
-    owner_device_token = await redis.get(
-        f"rms:dining_session:{dining_session.session_token}:owner"
-    )
-
-    is_owner = owner_device_token == device_token
+    is_owner = await session_service.check_session_ownership(dining_session.session_token, device_token,redis)
 
     if is_owner:
         is_approved = True
