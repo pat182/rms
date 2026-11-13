@@ -1,22 +1,18 @@
 from typing import Optional, Literal
-from datetime import datetime
-
-from fastapi.encoders import jsonable_encoder
+from redis.asyncio import Redis
 
 from ...core.websocket import manager
 from ...dependencies.restaurant_dependencies import (get_restaurant_table_service,get_dining_session_service)
-from ...model import Restaurant
 from ...core.dependencies import get_db
 from ...dependencies import (
-    get_authenticated_user,
-    get_current_restaurant,
-    require_role
+    require_role, get_redis
 )
 from ...model.repositories import DiningSessionRepo
 from ...schemas import PaginatedResponse
 from ...schemas.restaurant import CreateSeshStatusRequest, DiningSessionWithTableData
 from ...services.restaurant import RestaurantTableService, DiningSessionService
 
+from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter, Depends, Query, HTTPException,Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -68,6 +64,7 @@ async def update_dinning_sesh_status(
         table_service: RestaurantTableService = Depends(get_restaurant_table_service),
         db: AsyncSession = Depends(get_db),
         restaurant=Depends(require_role("owner")),
+        redis: Redis = Depends(get_redis),
 ):
 
     try:
@@ -76,7 +73,7 @@ async def update_dinning_sesh_status(
             payload,
         )
         await db.commit()
-        #
+
         await manager.broadcast(
             f"kitchen_orders:{restaurant.id}",
             jsonable_encoder({
@@ -87,6 +84,19 @@ async def update_dinning_sesh_status(
                 },
             }),
         )
+        if dining_sesh.status not in ("verified", "pending"):
+
+            session_keys = await redis.keys(
+                f"rms:dining_session:{session_token}:*"
+            )
+
+            if session_keys:
+                await redis.delete(*session_keys)
+            # from app.core.logger import log_info
+            # log_info("===============================================")
+            # log_info("TOKEN", session_token)
+            # log_info("===============================================")
+            await redis.delete(f"rms:cart:{session_token}")
 
         return {
             "success": True,

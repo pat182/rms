@@ -36,6 +36,10 @@ async def get_menu(
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
+        from app.core.logger import log_info
+        log_info("================================================")
+        log_info("asdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaagasdgsfdgfdgdfgfdgfd:", is_new)
+        log_info("================================================")
         await manager.broadcast(
                 f"restaurant:{restaurant.id}",
                 {
