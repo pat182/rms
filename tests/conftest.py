@@ -91,6 +91,10 @@ def client(
     item_service,
     category_service,
 ):
+    mock_redis = AsyncMock()
+
+    app.state.redis = mock_redis
+
     monkeypatch.setitem(app.dependency_overrides, get_db, lambda: db)
     monkeypatch.setitem(
         app.dependency_overrides,
