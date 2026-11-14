@@ -9,7 +9,7 @@ from ..schemas.customer_interface import GetOrdersResponse,OrderStatusRequest
 
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException, Request,Query
+from fastapi import APIRouter, Depends, HTTPException,Query
 from fastapi.encoders import jsonable_encoder
 
 
