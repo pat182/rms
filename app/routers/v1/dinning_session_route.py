@@ -9,6 +9,7 @@ from ...dependencies import (
 )
 from ...model.repositories import DiningSessionRepo
 from ...schemas import PaginatedResponse
+from ...schemas.customer_interface import GetOrdersWithItemData
 from ...schemas.restaurant import CreateSeshStatusRequest, DiningSessionWithTableData
 from ...services.restaurant import RestaurantTableService, DiningSessionService
 
@@ -110,4 +111,24 @@ async def update_dinning_sesh_status(
         raise HTTPException(
             status_code=500,
             detail="Failed to update dining session status",
+        )
+
+
+@router.get("/{session_token}/modal-order",response_model=GetOrdersWithItemData)
+async def get_sesh_order(
+    session_token: str,
+    restaurant=Depends(require_role("owner")),
+    sesh_service: DiningSessionService = Depends(get_dining_session_service)
+):
+    try:
+        sesh_order = await sesh_service.get_dining_session_order(session_token)
+
+        return {
+            "success": True,
+            "data": sesh_order,
+        }
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch orders",
         )

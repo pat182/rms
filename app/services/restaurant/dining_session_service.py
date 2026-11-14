@@ -2,8 +2,8 @@ from redis.asyncio import Redis
 from datetime import datetime
 
 from ...dependencies import get_redis
-from ...model import (RestaurantTable)
-from ...model.repositories import DiningSessionRepo
+from ...model import (RestaurantTable,CustomerOrder)
+from ...model.repositories import DiningSessionRepo,CustomerOrderRepo
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -133,3 +133,9 @@ class DiningSessionService:
 
         return dining_session
 
+    async def get_dining_session_order(self,session_token:str) -> CustomerOrder :
+        customer_repo = CustomerOrderRepo(self.db)
+
+        customer_order = await customer_repo.get_orders_by_session(session_token)
+
+        return customer_order

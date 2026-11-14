@@ -2,9 +2,10 @@ from .customer_interface_schema import *
 
 __all__ = [
     "CustomerCartRequest",
-    "CustomerOrderWithItemData",
+    "CustomerOrderWithItemsAndSession",
     "GetOrdersResponse",
     "OrderStatusRequest",
     "JoinRequestApproval",
-    "CustomerOrderData"
+    "CustomerOrderData",
+    "CustomerOrderWithItemsAndSession"
 ]
