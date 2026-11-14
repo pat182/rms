@@ -60,6 +60,9 @@ class CustomerOrderRepo(BaseRepo):
             )
             .where(
                 self.model.restaurant_id == restaurant_id,
+                self.model.dining_session.has(
+                    DiningSession.status != "closed"
+                ),
             )
         )
 
