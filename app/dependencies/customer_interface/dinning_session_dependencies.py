@@ -39,13 +39,7 @@ async def customer_session_dependency(
             detail="You are not authorized to access this dining session.",
         )
 
-    # from app.core.logger import log_info
-    # log_info("====================================")
-    # log_info("CUSTOMER:", customer)
-    # log_info("====================================")
     return dining_session
-
-
 
 
 async def get_or_create_dining_session(
@@ -64,9 +58,13 @@ async def get_or_create_dining_session(
 
     table = await table_service.validate_table_qr_token(table_qr)
 
-    is_new = False
+    await db.execute(
+        select(RestaurantTable.id)
+        .where(RestaurantTable.id == table.id)
+        .with_for_update()
+    )
 
-    # Try the supplied session token first.
+    is_new = False
     dining_session = None
 
     if session_token:
@@ -79,7 +77,7 @@ async def get_or_create_dining_session(
             if exc.status_code != 404:
                 raise
 
-    # If the supplied token is invalid or missing, find the current table session.
+
     if not dining_session:
         session_stmt = (
             select(DiningSession)
@@ -111,8 +109,14 @@ async def get_or_create_dining_session(
         )
 
         try:
-            await redis.set(owner_key, device_token, ex=10800)
+            await redis.set(
+                owner_key,
+                device_token,
+                ex=10800,
+            )
+
             await db.commit()
+
         except Exception:
             await db.rollback()
             await redis.delete(owner_key)
@@ -129,8 +133,12 @@ async def get_or_create_dining_session(
 
         is_new = True
 
-    # Check ownership and approval in one place.
-    is_owner = await session_service.check_session_ownership(dining_session.session_token, device_token,redis)
+    # Check ownership and approval.
+    is_owner = await session_service.check_session_ownership(
+        dining_session.session_token,
+        device_token,
+        redis,
+    )
 
     if is_owner:
         is_approved = True
