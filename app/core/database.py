@@ -25,7 +25,7 @@ DATABASE_URL = URL.create(
 # })
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True
+    echo=False
 )
 
 SessionLocal = async_sessionmaker(
