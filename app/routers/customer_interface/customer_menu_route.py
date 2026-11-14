@@ -70,6 +70,7 @@ async def get_menu(
             "dinning_session_token": dining_sesh.session_token,
             "restaurant_id" : restaurant.id,
             "restaurant_name" : restaurant.restaurant_name,
+            "table_name" : dining_sesh.restaurant_table.table_name,
             "menu" : menu_data,
         }
     }
