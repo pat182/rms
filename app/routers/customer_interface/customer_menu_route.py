@@ -36,10 +36,7 @@ async def get_menu(
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
-        from app.core.logger import log_info
-        log_info("================================================")
-        log_info("asdaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaagasdgsfdgfdgdfgfdgfd:", is_new)
-        log_info("================================================")
+
         await manager.broadcast(
                 f"restaurant:{restaurant.id}",
                 {
@@ -108,6 +105,11 @@ async def request_to_join(
     )
 
     # Notify the session owner.
+    # from app.core.logger import log_info
+    # log_info("====================================")
+    # log_info("request_key", request_key)
+    # log_info("SEND IT BITCH")
+    # log_info("====================================")
     await manager.broadcast(
         f"dining_session:{dining_sesh.session_token}",
         {
@@ -331,11 +333,7 @@ async def save_items(
     redis: Redis = Depends(get_redis),
     sesh_data : DiningSession = Depends(customer_session_dependency),
 ):
-    # dining_sesh  = sesh_data
-    from app.core.logger import log_info
-    log_info("====================================")
-    log_info("PUKHET THAILAND")
-    log_info("====================================")
+
     cart_data = [
         {
             **item.model_dump(mode="json"),
