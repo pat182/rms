@@ -11,6 +11,8 @@ from .restaurant_table import RestaurantTable
 from .dinning_session import DiningSession
 from .customer_order import CustomerOrder
 from .customer_order_item import CustomerOrderItem
+from .restaurant_configuration_table import RestaurantConfiguration
+from .restaurant_operating_hours_table import RestaurantOperatingHours
 
 __all__ = [
 
@@ -28,5 +30,7 @@ __all__ = [
     "DiningSession",
     "CustomerOrder",
     "CustomerOrderItem",
+    "RestaurantConfiguration",
+    "RestaurantOperatingHours"
 
 ]

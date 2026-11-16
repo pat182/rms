@@ -5,7 +5,7 @@ from .menu_item_route import router as menu_item_router
 from .authentication import router as authentication_router
 from .restaurant_table_route import router as restaurant_table_router
 from .dinning_session_route import router as dinning_session_router
-
+from .dashboard_route import router as dashboard_router
 
 __all__ = [
     "restaurant_router",
@@ -14,5 +14,6 @@ __all__ = [
     "menu_item_router",
     "authentication_router",
     "restaurant_table_router",
-    "dinning_session_router"
+    "dinning_session_router",
+    "dashboard_router"
 ]

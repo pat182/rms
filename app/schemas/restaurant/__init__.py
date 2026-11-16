@@ -14,5 +14,6 @@ __all__ = [
     "TableWithDinningSessionData",
     "DiningSessionWithTableData",
     "ShowRestoTableResponse",
-    "UpdateRestaurantResponse"
+    "UpdateRestaurantResponse",
+    "CompleteRestaurantResponse"
 ]

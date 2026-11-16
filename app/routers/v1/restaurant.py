@@ -8,7 +8,7 @@ from ...schemas.restaurant import (
     CreateRestaurantRequest,
     CreateRestaurantResponse,
     RestaurantStatusRequest,
-    RestaurantData, UpdateRestaurantResponse
+    RestaurantData, UpdateRestaurantResponse, CompleteRestaurantResponse
 )
 from ...services.restaurant.restaurant_service import RestaurantService
 from ...model.repositories import RestaurantRepository
@@ -16,7 +16,7 @@ from ...core.dependencies import get_db
 
 from fastapi import APIRouter, Depends, HTTPException,Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(
     prefix="/v1/restaurants",
@@ -37,7 +37,9 @@ async def index(
 
     restaurants, total = await resto_repo.filter(page, page_size, sort_by, sort_order, search,
         relationships=[
-            Restaurant.country,
+            selectinload(
+                Restaurant.country
+            ),
         ],
         filters=[
             Restaurant.restaurant_users.any(
@@ -47,8 +49,7 @@ async def index(
     )
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=restaurants)
 
-
-@router.get("/{restaurant_id}",response_model=CreateRestaurantResponse)
+@router.get("/{restaurant_id}",response_model=CompleteRestaurantResponse)
 async def show(
         restaurant_id: int,
         auth_user: User = Depends(get_authenticated_user),
@@ -92,7 +93,7 @@ async def toggle_status(
         raise HTTPException(status_code=500, detail="Failed to update status")
 
 
-@router.post("", response_model=CreateRestaurantResponse)
+@router.post("", response_model=UpdateRestaurantResponse)
 async def create_restaurant(
         payload: CreateRestaurantRequest,
         auth_user: User = Depends(get_authenticated_user),

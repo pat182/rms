@@ -2,7 +2,7 @@ from sqlalchemy.orm import contains_eager
 
 from app.core.base_repo import BaseRepo
 
-from app.model import Menu, Restaurant, RestaurantUser, Country
+from app.model import Restaurant, RestaurantUser, Country, RestaurantConfiguration, RestaurantOperatingHours
 from sqlalchemy import select
 
 
@@ -25,8 +25,18 @@ class RestaurantRepository(BaseRepo):
                 Country,
                 self.model.country_id == Country.id,
             )
+            .outerjoin(
+                RestaurantConfiguration,
+                self.model.id == RestaurantConfiguration.restaurant_id,
+            )
+            .outerjoin(
+                RestaurantOperatingHours,
+                RestaurantConfiguration.id == RestaurantOperatingHours.configuration_id,
+            )
             .options(
-                contains_eager(self.model.country)
+                contains_eager(self.model.country),
+                contains_eager(self.model.configuration)
+                .contains_eager(RestaurantConfiguration.operating_hours),
             )
             .where(
                 self.model.id == restaurant_id,
@@ -34,6 +44,8 @@ class RestaurantRepository(BaseRepo):
             )
         )
         return result
+
+
     async def get_resto_by_name(self, resto_name:str, exclude_id: int | None = None ):
         stmt = (
             select(self.model).where(

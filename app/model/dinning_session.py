@@ -3,13 +3,22 @@ from datetime import datetime
 
 from app.core.database import Base
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, func,Index,text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class DiningSession(Base):
     __tablename__ = "dining_sessions"
-
+    __table_args__ = (
+        Index(
+            "uq_active_dining_session_per_table",
+            "restaurant_table_id",
+            unique=True,
+            postgresql_where=text(
+                "is_active IS TRUE AND status IN ('verified', 'pending')"
+            ),
+        ),
+    )
     id: Mapped[int] = mapped_column(primary_key=True)
 
     restaurant_table_id: Mapped[int] = mapped_column(
