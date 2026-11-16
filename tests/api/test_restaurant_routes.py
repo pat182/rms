@@ -49,7 +49,11 @@ def test_list_restaurants_success(client, monkeypatch):
     repository.filter.assert_awaited_once()
     args, kwargs = repository.filter.await_args
     assert args == (2, 5, "restaurant_name", "asc", "Dummy")
-    assert kwargs["relationships"] == [restaurant_route.Restaurant.country]
+
+    assert len(kwargs["relationships"]) == 1
+
+    relationship = kwargs["relationships"][0]
+    assert relationship.path[1].key == "country"
 
 
 def test_list_restaurants_rejects_invalid_pagination(client, monkeypatch):

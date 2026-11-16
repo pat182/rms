@@ -16,7 +16,7 @@ from ...services.restaurant import RestaurantTableService, DiningSessionService
 from fastapi.encoders import jsonable_encoder
 from fastapi import APIRouter, Depends, Query, HTTPException,Request
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 
 
 router = APIRouter(
@@ -51,7 +51,9 @@ async def dining_sesh_index(
         sort_order,
         search,
         relationships=[
-            dining_sesh_repo.model.restaurant_table
+            selectinload(
+                dining_sesh_repo.model.restaurant_table
+            )
         ],
         filters=filters,
     )

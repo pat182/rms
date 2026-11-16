@@ -85,11 +85,8 @@ class BaseRepo(ABC):
 
         stmt = select(self.model)
 
-
         if relationships:
-            stmt = stmt.options(
-                *[selectinload(rel) for rel in relationships]
-            )
+            stmt = stmt.options(*relationships)
 
         if hasattr(self.model, "restaurant_id"):
             stmt = stmt.where(

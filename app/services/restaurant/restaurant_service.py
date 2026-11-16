@@ -1,5 +1,5 @@
 from ...model import (User,Restaurant,Country)
-from ...model.repositories import RestaurantRepository
+from ...model.repositories import RestaurantRepository,RestaurantConfigRepository,RestaurantOpHoursRepository
 
 from app.schemas.restaurant.restaurant_schema import CreateRestaurantRequest
 
@@ -16,7 +16,7 @@ class RestaurantService:
 
         result = await self.repo.get_user_restaurant(restaurant_id,auth_user.id)
 
-        restaurant = result.scalar_one_or_none()
+        restaurant = result.unique().scalar_one_or_none()
 
 
         if restaurant is None:
@@ -85,9 +85,30 @@ class RestaurantService:
         self.db.add(restaurant)
 
         await self.db.flush()
+
+        resto_config_repo = RestaurantConfigRepository(self.db)
+
+        configuration = resto_config_repo.model(
+            restaurant_id=restaurant.id,
+            is_24_hours=False,
+        )
+        self.db.add(configuration)
+
+        await self.db.flush()
+
+        resto_op_repo = RestaurantOpHoursRepository(self.db)
+        operating_hours = [
+            resto_op_repo.model(
+                configuration_id=configuration.id,
+                day_of_week=day,
+                is_closed=True,
+            )
+            for day in range(7)
+        ]
+        self.db.add_all(operating_hours)
+        await self.db.flush()
+
         await self.repo.create_restaurant_user(restaurant.id,auth_user.id)
-
-
 
 
         return restaurant
