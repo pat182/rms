@@ -84,3 +84,10 @@ class Restaurant(Base):
     orders: Mapped[list["CustomerOrder"]] = relationship(
         back_populates="restaurant",
     )
+
+    configuration: Mapped["RestaurantConfiguration"] = relationship(
+        "RestaurantConfiguration",
+        back_populates="restaurant",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

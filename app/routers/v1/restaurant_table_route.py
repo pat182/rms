@@ -10,14 +10,14 @@ from ...services.restaurant import RestaurantTableService
 from ...schemas.restaurant import (
     CreateRestoRequest,
     CreateRestoTableResponse,
-    CreateSeshStatusRequest,
     UpdateRestoTableResponse, TableWithDinningSessionData, ShowRestoTableResponse,
 )
+
 from ...dependencies import (
-    get_authenticated_user,
     get_current_restaurant, require_role
 )
 
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter,Depends,HTTPException,Query
 
@@ -25,7 +25,6 @@ router = APIRouter(
     prefix="/v1/restaurant-table",
     tags=["Restaurants Tables"],
     dependencies=[
-        # Depends(get_authenticated_user),
         Depends(get_current_restaurant)
     ],
 )
@@ -41,6 +40,7 @@ async def index(
     ] = Query(None),
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
     search: Optional[str] = Query(None),
+    dashboard: bool = Query(False),
 ):
     resto_table_repo = RestaurantTableRepo(db)
 
@@ -52,12 +52,15 @@ async def index(
         search,
         restaurant.id,
         relationships=[
-            resto_table_repo.model.dining_sessions.and_(
-                # DiningSession.is_active.is_(True),
-                # DiningSession.closed_at.is_(None),
-                # DiningSession.status != "rejected",
+            selectinload(
+                resto_table_repo.model.dining_sessions.and_(
+                    DiningSession.status.in_(["verified", "pending"])
+                )
             )
+        ] if dashboard else [
+            selectinload(resto_table_repo.model.dining_sessions)
         ],
+
     )
 
     return PaginatedResponse(

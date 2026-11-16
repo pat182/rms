@@ -9,7 +9,8 @@ from app.routers.v1 import (
     menu_item_router,
     authentication_router,
     restaurant_table_router,
-    dinning_session_router
+    dinning_session_router,
+    dashboard_router
 )
 from app.routers.customer_interface import (
     customer_menu_router,
@@ -78,7 +79,7 @@ app.include_router(menu_category_router)
 app.include_router(menu_item_router)
 app.include_router(restaurant_table_router)
 app.include_router(dinning_session_router)
-
+app.include_router(dashboard_router)
 #=============CUSTOMER INTERFACE=============
 app.include_router(customer_menu_router)
 
