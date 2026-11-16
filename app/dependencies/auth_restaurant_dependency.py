@@ -1,5 +1,5 @@
 from ..dependencies import get_authenticated_user
-from ..model import User, Role
+from ..model import User, Role, Restaurant
 
 from fastapi import Header, Depends, HTTPException
 
@@ -55,8 +55,6 @@ def require_role(*allowed_roles: str):
                 status_code=403,
                 detail="Restaurant access denied",
             )
-
-
 
         return restaurant
 
