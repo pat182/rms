@@ -1,13 +1,14 @@
 from typing import Literal, Optional
 
-from ...dependencies import get_authenticated_user
+from ...core.logger import log_info
+from ...dependencies import get_authenticated_user, require_role
 from ...model import User, Restaurant, RestaurantUser
 from ...schemas import PaginatedResponse
 from ...schemas.restaurant import (
     CreateRestaurantRequest,
     CreateRestaurantResponse,
     RestaurantStatusRequest,
-    RestaurantData
+    RestaurantData, UpdateRestaurantResponse
 )
 from ...services.restaurant.restaurant_service import RestaurantService
 from ...model.repositories import RestaurantRepository
@@ -111,6 +112,34 @@ async def create_restaurant(
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create restaurant")
+
+
+@router.put("",response_model=UpdateRestaurantResponse)
+async def update_restaurant(
+    payload: CreateRestaurantRequest,
+    db: AsyncSession = Depends(get_db),
+    restaurant=Depends(require_role("owner")),
+):
+    restaurant_service = RestaurantService(db)
+    try:
+
+        resto = await restaurant_service.update_restaurant(restaurant,payload)
+
+        await db.commit()
+
+        return {
+            "success": True,
+            "data":resto,
+        }
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as e:
+        await db.rollback()
+        log_info("Failed to update restaurant:",e)
+        raise HTTPException(status_code=500, detail="cant update restaurant")
+
+
 
 
 

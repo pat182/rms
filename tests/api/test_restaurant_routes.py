@@ -244,6 +244,7 @@ def test_create_restaurant_http_error_rolls_back(
         json={
             "country_id": 1,
             "restaurant_name": "Dummy Restaurant",
+            "email" : "test@gmail.com",
             "contact_number": "09123456789",
             "address": "123 Test Street",
         },
@@ -273,6 +274,7 @@ def test_create_restaurant_unexpected_error_rolls_back(
         json={
             "country_id": 1,
             "restaurant_name": "Dummy Restaurant",
+            "email" : "tess@gmail.com",
             "contact_number": "09123456789",
             "address": "123 Test Street",
         },

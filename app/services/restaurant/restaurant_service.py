@@ -34,9 +34,28 @@ class RestaurantService:
 
         restaurant.is_active = is_active
 
-        # await self.db.flush()
 
         return restaurant
+
+    async def update_restaurant(self,restaurant:Restaurant,payload:CreateRestaurantRequest)->Restaurant:
+
+        resto_stmt = await self.repo.get_resto_by_name(payload.restaurant_name,restaurant.id)
+
+        if resto_stmt.scalar_one_or_none() is not None:
+
+            raise HTTPException(
+                status_code=409,
+                detail=f"{payload.restaurant_name} name already exists",
+            )
+        restaurant.country_id = 1
+        restaurant.restaurant_name = payload.restaurant_name
+        restaurant.address = payload.address
+        restaurant.contact_number = payload.contact_number
+        restaurant.email = payload.email
+        restaurant.is_active = payload.is_active
+
+        return restaurant
+
 
     async def create_restaurant(self,payload: CreateRestaurantRequest,auth_user:User):
         country = await self.db.get(Country,payload.country_id)

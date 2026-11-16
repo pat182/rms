@@ -15,7 +15,8 @@ class CreateRestaurantRequest(BaseSchema):
     restaurant_name: str
     contact_number: str
     address: str
-    email: EmailStr | None = None
+    is_active :  bool = False
+    email: EmailStr
 
 
 # ==================== DATA SCHEMAS ====================
@@ -32,8 +33,24 @@ class RestaurantData(BaseSchema):
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class RestaurantDataWithOutCountry(BaseSchema):
+    id: int
+    country_id: int
+    restaurant_name: str
+    contact_number: str
+    address: str
+    email: str | None = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 
 # ==================== RESPONSE SCHEMAS ====================
 class CreateRestaurantResponse(BaseSchema):
     success: bool
     data: RestaurantData
+
+class UpdateRestaurantResponse(BaseSchema):
+    success: bool
+    data: RestaurantDataWithOutCountry

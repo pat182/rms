@@ -34,11 +34,17 @@ class RestaurantRepository(BaseRepo):
             )
         )
         return result
-    async def get_resto_by_name(self, resto_name:str ):
-        return await self.db.execute(
+    async def get_resto_by_name(self, resto_name:str, exclude_id: int | None = None ):
+        stmt = (
             select(self.model).where(
                 self.model.restaurant_name == resto_name
             )
+        )
+        if exclude_id is not None:
+            stmt = stmt.where(self.model.id != exclude_id)
+
+        return await self.db.execute(
+            stmt
         )
 
     async def create_restaurant_user(self,restaurant_id:int,user_id:int) -> None:
