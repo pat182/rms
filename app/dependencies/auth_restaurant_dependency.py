@@ -55,7 +55,6 @@ def require_role(*allowed_roles: str):
                 status_code=403,
                 detail="Restaurant access denied",
             )
-
         return restaurant
 
     return dependency
