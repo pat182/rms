@@ -114,8 +114,8 @@ async def create_restaurant(
         await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create restaurant")
 
-
-@router.put("",response_model=UpdateRestaurantResponse)
+# response_model=UpdateRestaurantResponse
+@router.put("",)
 async def update_restaurant(
     payload: CreateRestaurantRequest,
     db: AsyncSession = Depends(get_db),
@@ -135,10 +135,10 @@ async def update_restaurant(
     except HTTPException:
         await db.rollback()
         raise
-    except Exception as e:
-        await db.rollback()
-        log_info("Failed to update restaurant:",e)
-        raise HTTPException(status_code=500, detail="cant update restaurant")
+    # except Exception as e:
+    #     await db.rollback()
+    #     log_info("Failed to update restaurant:",e)
+    #     raise HTTPException(status_code=500, detail="cant update restaurant")
 
 
 

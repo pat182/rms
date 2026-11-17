@@ -1,3 +1,4 @@
+from .. import RestaurantConfiguration
 from ...core.base_repo import BaseRepo
 from ...model import User, RestaurantUser, Restaurant
 
@@ -31,6 +32,8 @@ class UserRepository(BaseRepo):
                 selectinload(self.model.role),
                 selectinload(self.model.restaurant_users)
                 .selectinload(RestaurantUser.restaurants)
+                .selectinload(Restaurant.configuration)
+                .selectinload(RestaurantConfiguration.operating_hours),
             )
             .where(self.model.id == _id)
         )

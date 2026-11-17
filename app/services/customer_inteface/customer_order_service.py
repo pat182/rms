@@ -15,9 +15,11 @@ class CustomerOrderService:
         self.model = self.repo.model
 
     @staticmethod
-    def get_subtotal(items,key="unitPrice"):
-        total = sum(getattr(item, key) for item in items)
-        return total
+    def get_subtotal(items, price_key="unitPrice", quantity_key="quantity"):
+        return sum(
+            getattr(item, price_key) * getattr(item, quantity_key)
+            for item in items
+        )
 
     async def create_customer_order(
             self,

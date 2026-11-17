@@ -1,3 +1,5 @@
+from datetime import time
+
 from ...model import (User,Restaurant,Country)
 from ...model.repositories import RestaurantRepository,RestaurantConfigRepository,RestaurantOpHoursRepository
 
@@ -39,20 +41,38 @@ class RestaurantService:
 
     async def update_restaurant(self,restaurant:Restaurant,payload:CreateRestaurantRequest)->Restaurant:
 
-        resto_stmt = await self.repo.get_resto_by_name(payload.restaurant_name,restaurant.id)
+        resto = await self.repo.get_resto_by_name(payload.restaurant_name,restaurant.id)
 
-        if resto_stmt.scalar_one_or_none() is not None:
+        if resto.scalar_one_or_none() is not None:
 
             raise HTTPException(
                 status_code=409,
                 detail=f"{payload.restaurant_name} name already exists",
             )
+
+
         restaurant.country_id = 1
         restaurant.restaurant_name = payload.restaurant_name
         restaurant.address = payload.address
         restaurant.contact_number = payload.contact_number
         restaurant.email = payload.email
         restaurant.is_active = payload.is_active
+        # config
+        resto_config = restaurant.configuration
+        resto_config.is_24_hours = payload.configuration.is_24_hours
+
+        for db_day, payload_day in zip(
+                resto_config.operating_hours,
+                payload.configuration.operating_hours
+        ):
+            if resto_config.is_24_hours:
+                db_day.opening_time = None
+                db_day.closing_time = None
+                db_day.is_closed = False
+            else:
+                db_day.opening_time = payload_day.opening_time
+                db_day.closing_time = payload_day.closing_time
+                db_day.is_closed = payload_day.is_closed
 
         return restaurant
 
