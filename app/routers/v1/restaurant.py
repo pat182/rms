@@ -135,10 +135,10 @@ async def update_restaurant(
     except HTTPException:
         await db.rollback()
         raise
-    # except Exception as e:
-    #     await db.rollback()
-    #     log_info("Failed to update restaurant:",e)
-    #     raise HTTPException(status_code=500, detail="cant update restaurant")
+    except Exception as e:
+        await db.rollback()
+        log_info("Failed to update restaurant:",e)
+        raise HTTPException(status_code=500, detail="cant update restaurant")
 
 
 
