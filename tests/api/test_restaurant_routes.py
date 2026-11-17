@@ -215,6 +215,71 @@ def test_create_restaurant_success(client, monkeypatch, auth_user, db):
             "contact_number": "09123456789",
             "address": "123 Test Street",
             "email": "dummy@example.com",
+            "configuration": {
+                "id": 15,
+                "restaurant_id": 22,
+                "is_24_hours": "true",
+                "created_at": "2026-11-16T13:22:24.098036Z",
+                "updated_at": "2026-11-16T13:22:24.098036Z",
+                "operating_hours": [
+                    {
+                        "id": 71,
+                        "configuration_id": 15,
+                        "day_of_week": 0,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 72,
+                        "configuration_id": 15,
+                        "day_of_week": 1,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 73,
+                        "configuration_id": 15,
+                        "day_of_week": 2,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 74,
+                        "configuration_id": 15,
+                        "day_of_week": 3,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 75,
+                        "configuration_id": 15,
+                        "day_of_week": 4,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 76,
+                        "configuration_id": 15,
+                        "day_of_week": 5,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 77,
+                        "configuration_id": 15,
+                        "day_of_week": 6,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    }
+                ]
+            }
         },
     )
 
@@ -251,6 +316,71 @@ def test_create_restaurant_http_error_rolls_back(
             "email" : "test@gmail.com",
             "contact_number": "09123456789",
             "address": "123 Test Street",
+            "configuration": {
+                "id": 15,
+                "restaurant_id": 22,
+                "is_24_hours": "true",
+                "created_at": "2026-11-16T13:22:24.098036Z",
+                "updated_at": "2026-11-16T13:22:24.098036Z",
+                "operating_hours": [
+                    {
+                        "id": 71,
+                        "configuration_id": 15,
+                        "day_of_week": 0,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 72,
+                        "configuration_id": 15,
+                        "day_of_week": 1,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 73,
+                        "configuration_id": 15,
+                        "day_of_week": 2,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 74,
+                        "configuration_id": 15,
+                        "day_of_week": 3,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 75,
+                        "configuration_id": 15,
+                        "day_of_week": 4,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 76,
+                        "configuration_id": 15,
+                        "day_of_week": 5,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 77,
+                        "configuration_id": 15,
+                        "day_of_week": 6,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    }
+                ]
+            }
         },
     )
 
@@ -281,6 +411,71 @@ def test_create_restaurant_unexpected_error_rolls_back(
             "email" : "tess@gmail.com",
             "contact_number": "09123456789",
             "address": "123 Test Street",
+            "configuration": {
+                "id": 15,
+                "restaurant_id": 22,
+                "is_24_hours": "true",
+                "created_at": "2026-11-16T13:22:24.098036Z",
+                "updated_at": "2026-11-16T13:22:24.098036Z",
+                "operating_hours": [
+                    {
+                        "id": 71,
+                        "configuration_id": 15,
+                        "day_of_week": 0,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 72,
+                        "configuration_id": 15,
+                        "day_of_week": 1,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 73,
+                        "configuration_id": 15,
+                        "day_of_week": 2,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 74,
+                        "configuration_id": 15,
+                        "day_of_week": 3,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 75,
+                        "configuration_id": 15,
+                        "day_of_week": 4,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 76,
+                        "configuration_id": 15,
+                        "day_of_week": 5,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    },
+                    {
+                        "id": 77,
+                        "configuration_id": 15,
+                        "day_of_week": 6,
+                        "opening_time": "00:00",
+                        "closing_time": "00:00",
+                        "is_closed": "false"
+                    }
+                ]
+            }
         },
     )
 

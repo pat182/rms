@@ -17,6 +17,7 @@ class CreateRestaurantRequest(BaseSchema):
     address: str
     is_active :  bool = False
     email: EmailStr
+    configuration: RestaurantConfigurationData
 
 
 # ==================== DATA SCHEMAS ====================
