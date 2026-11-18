@@ -365,17 +365,17 @@ async def save_items(
     }
 
 
+
 @router.post("/orders/{session_token}")
 async def create_order(
     payload: list[CustomerCartRequest],
-    sesh_data : DiningSession = Depends(customer_session_dependency),
+    sesh_data: DiningSession = Depends(customer_session_dependency),
     order_service: CustomerOrderService = Depends(get_customer_order_service),
     db: AsyncSession = Depends(get_db),
     redis: Redis = Depends(get_redis)
 ):
     try:
-
-        dining_sesh= sesh_data
+        dining_sesh = sesh_data
 
         order = await order_service.create_customer_order(
             payload,
@@ -384,69 +384,78 @@ async def create_order(
 
         await db.commit()
 
+        # Clear the Redis cart
+        await redis.delete(
+            f"rms:cart:{dining_sesh.session_token}"
+        )
+        order_items = [
+            {
+                "id": item.id,
+                "menu_item_id": item.menu_item_id,
+                "item_name": item.item_name,
+                "unit_price": item.unit_price,
+                "quantity": item.quantity,
+                "special_request": item.special_request,
+                "subtotal": item.subtotal,
+            }
+            for item in order.items
+        ]
 
-        await redis.delete(f"rms:cart:{dining_sesh.session_token}")
-
+        # Broadcast shared cart update
         await manager.broadcast(
             f"shared_cart:{dining_sesh.session_token}",
             jsonable_encoder({
                 "event": "cart_updated",
                 "data": {
-                    "order" : [
+                    "order": [
                         {
-                            "id" : order.id,
-                            "status" : order.status,
-                            "items" : [
+                            "id": order.id,
+                            "status": order.status,
+                            "items": [
                                 {
-                                    "id": item.id,
-                                    "menu_item_id": item.menu_item_id,
-                                    "item_name": item.item_name,
-                                    "unit_price": item.unit_price,
-                                    "quantity": item.quantity,
-                                    "special_request": item.special_request,
-                                    "subtotal": item.subtotal,
-                                    "created_at": item.created_at.isoformat() if item.created_at else None,
-                                    "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+                                    **item,
+                                    "created_at": order_item.created_at,
+                                    "updated_at": order_item.updated_at,
                                 }
-                                for item in order.items
+                                for item, order_item in zip(
+                                    order_items,
+                                    order.items
+                                )
                             ],
-                            'subtotal': order.subtotal
+                            "subtotal": order.subtotal,
                         }
                     ],
-                    "cart_items" : []
+                    "cart_items": []
                 }
             })
         )
 
+        order_payload = jsonable_encoder({
+            "event": "order_created",
+            "data": {
+                "order": {
+                    "id": order.id,
+                    "table_number": dining_sesh.restaurant_table.id,
+                    "status": order.status,
+                    "created_at": order.created_at,
+                    "items": order_items,
+                    "dining_session": dining_sesh,
+                    "subtotal": order.subtotal,
+                }
+            }
+        })
+
+        # Notify kitchen
         await manager.broadcast(
             f"kitchen_orders:{order.restaurant_id}",
-            jsonable_encoder({
-                "event": "order_created",
-                "data": {
-                    "order": {
-                        "id": order.id,
-                        "table_number": dining_sesh.restaurant_table.id,
-                        "status": order.status,
-                        "created_at": order.created_at.isoformat() if order.created_at else None,
-                        "items": [
-                            {
-                                "id": item.id,
-                                "menu_item_id": item.menu_item_id,
-                                "item_name": item.item_name,
-                                "unit_price": item.unit_price,
-                                "quantity": item.quantity,
-                                "special_request": item.special_request,
-                                "subtotal": item.subtotal,
-                            }
-                            for item in order.items
-                        ],
-                        "dining_session" : dining_sesh,
-                        "subtotal": order.subtotal,
-                    }
-                }
-            })
+            order_payload
         )
 
+        # Notify restaurant admin
+        await manager.broadcast(
+            f"restaurant:{order.restaurant_id}",
+            order_payload
+        )
 
         return {
             "success": True,
@@ -456,12 +465,14 @@ async def create_order(
     except HTTPException:
         await db.rollback()
         raise
+
     except Exception:
         await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Internal Server Error"
         )
+
 
 
 @router.patch("/orders/{session_token}/cancel/{order_id}")
