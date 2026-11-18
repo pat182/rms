@@ -26,6 +26,10 @@ class CustomerOrderService:
             payload: list[CustomerCartRequest],
             dining_sesh: DiningSession
     ) -> CustomerOrder:
+        from app.core.logger import log_info
+        log_info("=======================================")
+        log_info("PAYLOAD:", payload)
+        log_info("=======================================")
         order_subtotal = self.get_subtotal(payload)
 
         order = self.model(
