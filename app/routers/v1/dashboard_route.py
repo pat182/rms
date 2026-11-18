@@ -88,8 +88,8 @@ async def get_chart(
 
     except HTTPException:
         raise
-    # except Exception:
-    #     raise HTTPException(
-    #         status_code=500,
-    #         detail="Failed to fetch order chart data",
-    #     )
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch order chart data",
+        )
