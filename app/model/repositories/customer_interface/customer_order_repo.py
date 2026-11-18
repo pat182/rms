@@ -3,7 +3,7 @@ from datetime import datetime
 from app.core.base_repo import BaseRepo
 from app.model import CustomerOrder, DiningSession
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 from sqlalchemy.orm import selectinload
 
 
@@ -112,22 +112,31 @@ class CustomerOrderRepo(BaseRepo):
             restaurant_id: int,
             order_from: datetime | None = None,
             order_at: datetime | None = None,
-    ):
-        hour = func.extract("hour", self.model.created_at).label("hour")
+    ) -> dict[int, int]:
+        hour = func.extract(
+            "hour",
+            self.model.created_at,
+        ).label("hour")
 
         query = (
             select(
                 hour,
-                func.count(self.model.id).label("orders")
+                func.count(self.model.id).label("orders"),
             )
-            .where(self.model.restaurant_id == restaurant_id)
+            .where(
+                self.model.restaurant_id == restaurant_id,
+            )
         )
 
-        if order_from:
-            query = query.where(self.model.created_at >= order_from)
+        if order_from is not None:
+            query = query.where(
+                self.model.created_at >= order_from,
+            )
 
-        if order_at:
-            query = query.where(self.model.created_at <= order_at)
+        if order_at is not None:
+            query = query.where(
+                self.model.created_at <= order_at,
+            )
 
         query = query.group_by(hour).order_by(hour)
 
@@ -135,8 +144,80 @@ class CustomerOrderRepo(BaseRepo):
 
         return {
             int(row.hour): row.orders
-            for row in result
+            for row in result.all()
         }
+
+    async def get_order_insights(
+            self,
+            restaurant_id: int,
+            order_from: datetime | None = None,
+            order_at: datetime | None = None,
+    ) -> dict:
+
+        completed = self.model.status == "served"
+        canceled = self.model.status == "canceled"
+        pending = self.model.status == "pending"
+        preparing = self.model.status == "preparing"
+
+        query = select(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (completed, self.model.subtotal),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("revenue"),
+
+            func.coalesce(
+                func.avg(
+                    case(
+                        (completed, self.model.subtotal),
+                        else_=None,
+                    )
+                ),
+                0,
+            ).label("average_order_value"),
+
+            func.count(
+                case((completed, self.model.id))
+            ).label("completed"),
+            func.count(
+                case((pending, self.model.id))
+            ).label("pending"),
+            func.count(
+                case((preparing, self.model.id))
+            ).label("preparing"),
+            func.count(
+                case((canceled, self.model.id))
+            ).label("canceled"),
+        ).where(
+            self.model.restaurant_id == restaurant_id,
+        )
+
+        if order_from is not None:
+            query = query.where(
+                self.model.created_at >= order_from,
+            )
+
+        if order_at is not None:
+            query = query.where(
+                self.model.created_at <= order_at,
+            )
+
+        result = await self.db.execute(query)
+        row = result.one()
+
+        return {
+            "revenue": row.revenue,
+            "average_order_value": row.average_order_value,
+            "completed": row.completed,
+            "cancelled": row.canceled,
+            "pending": row.pending,
+            "preparing": row.preparing,
+        }
+
 
 
 
