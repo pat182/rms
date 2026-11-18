@@ -55,6 +55,21 @@ async def index(
 
     return PaginatedResponse(page=page, page_size=page_size, total_items=total, data=data)
 
+# @router.get("/order-insight",response_model=PaginatedResponse[CustomerOrderWithItemsAndSession])
+# async def get_order_insight(
+#     restaurant=Depends(require_role("owner")),
+#     db: AsyncSession = Depends(get_db),
+#     order_from: datetime | None = None,
+#     order_at: datetime | None = None,
+# ):
+#     dashboard_service = DashboardService(db)
+#     data = await dashboard_service.get_chart_data(restaurant, order_from, order_at)
+#
+#     return {
+#         "success": True,
+#         "data": data
+#     }
+
 @router.get("/order-chart")
 async def get_chart(
     restaurant=Depends(require_role("owner")),
