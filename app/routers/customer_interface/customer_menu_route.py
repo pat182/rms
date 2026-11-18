@@ -36,12 +36,12 @@ async def get_menu(
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
-
         await manager.broadcast(
                 f"restaurant:{restaurant.id}",
                 {
                     "event": "dining_session_created",
                     "data": {
+                        "table_id": dining_sesh.restaurant_table.id,
                         "session_id": dining_sesh.id,
                         "session_token" : dining_sesh.session_token,
                         "table_name": dining_sesh.restaurant_table.table_name,
