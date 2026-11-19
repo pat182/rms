@@ -1,6 +1,8 @@
-# from sentry_sdk.utils import now
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from datetime import datetime, timezone
 
+from ...helper import is_open_today
 from ...model import RestaurantTable, Restaurant
 from ...model.repositories.restaurant_table_repo import RestaurantTableRepo
 from ...schemas.restaurant import CreateRestoRequest, CreateSeshStatusRequest
@@ -158,3 +160,68 @@ class RestaurantTableService:
             )
 
         return table
+
+    async def check_resto_status(self, qr_token: str):
+
+        resto = await self.repo.validate_resto_status(qr_token)
+
+        if resto is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Restaurant not found.",
+            )
+
+        config = resto.configuration
+
+        if config.is_24_hours:
+            return True
+
+        now = datetime.now(ZoneInfo(resto.country.timezone))
+
+        current_day = now.weekday()
+        current_time = now.time()
+
+        previous_day = (current_day - 1) % 7
+
+        today_hours = next(
+            (
+                hours
+                for hours in config.operating_hours
+                if hours.day_of_week == current_day
+            ),
+            None,
+        )
+
+        yesterday_hours = next(
+            (
+                hours
+                for hours in config.operating_hours
+                if hours.day_of_week == previous_day
+            ),
+            None,
+        )
+
+        is_open = False
+
+        # Check today's schedule.
+        if today_hours and not today_hours.is_closed:
+
+            opening = today_hours.opening_time
+            closing = today_hours.closing_time
+
+            if opening < closing:
+                is_open = opening <= current_time < closing
+            else:
+                # Overnight schedule.
+                is_open = current_time >= opening
+
+        # Check yesterday's overnight schedule.
+        if (
+                not is_open
+                and yesterday_hours
+                and not yesterday_hours.is_closed
+                and yesterday_hours.opening_time > yesterday_hours.closing_time
+        ):
+            is_open = current_time < yesterday_hours.closing_time
+
+        return is_open
