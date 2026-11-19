@@ -21,7 +21,11 @@ class DiningSessionService:
         owner_device_token = await redis.get(
             f"rms:dining_session:{session_token}:owner"
         )
-
+        from app.core.logger import log_info
+        log_info("========================================")
+        log_info("OWNER_DEVICE_TOKEN:", owner_device_token)
+        log_info("DEVICE_TOKEN", device_token)
+        log_info("========================================")
         return owner_device_token == device_token
 
     async def generate_filter(
