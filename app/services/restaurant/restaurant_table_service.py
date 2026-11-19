@@ -204,7 +204,12 @@ class RestaurantTableService:
         is_open = False
 
         # Check today's schedule.
-        if today_hours and not today_hours.is_closed:
+        if (
+                today_hours
+                and not today_hours.is_closed
+                and today_hours.opening_time is not None
+                and today_hours.closing_time is not None
+        ):
 
             opening = today_hours.opening_time
             closing = today_hours.closing_time
@@ -220,6 +225,8 @@ class RestaurantTableService:
                 not is_open
                 and yesterday_hours
                 and not yesterday_hours.is_closed
+                and yesterday_hours.opening_time is not None
+                and yesterday_hours.closing_time is not None
                 and yesterday_hours.opening_time > yesterday_hours.closing_time
         ):
             is_open = current_time < yesterday_hours.closing_time
