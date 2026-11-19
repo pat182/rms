@@ -15,7 +15,11 @@ class Country(Base):
         unique=True,
         nullable=False
     )
-
+    timezone: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        server_default="UTC",
+    )
     country_code: Mapped[str] = mapped_column(
         String(3),
         unique=True,
