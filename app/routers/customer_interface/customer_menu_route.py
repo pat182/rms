@@ -521,9 +521,9 @@ async def cancel_order(
     except HTTPException:
         await db.rollback()
         raise
-    except Exception:
-        await db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Internal Server Error",
-        )
+    # except Exception:
+    #     await db.rollback()
+    #     raise HTTPException(
+    #         status_code=500,
+    #         detail="Internal Server Error",
+    #     )
