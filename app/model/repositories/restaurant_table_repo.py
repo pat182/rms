@@ -2,9 +2,9 @@ from sqlalchemy.orm import selectinload
 
 from app.core.base_repo import BaseRepo
 
-from sqlalchemy import select,func
+from sqlalchemy import select, func, and_
 
-from app.model import RestaurantTable, DiningSession
+from app.model import RestaurantTable, DiningSession, Restaurant, RestaurantConfiguration, RestaurantOperatingHours
 
 
 class RestaurantTableRepo(BaseRepo):
@@ -58,6 +58,22 @@ class RestaurantTableRepo(BaseRepo):
 
         return await self.db.scalar(stmt.limit(1))
 
+    async def validate_resto_status(self, qr_token: str):
+        stmt = (
+            select(Restaurant)
+            .join(self.model, self.model.restaurant_id == Restaurant.id)
+            .where(
+                self.model.qr_token == qr_token,
+                Restaurant.is_active.is_(True),
+            )
+            .options(
+                selectinload(Restaurant.country),
+                selectinload(Restaurant.configuration)
+                .selectinload(RestaurantConfiguration.operating_hours)
+            )
+        )
+        return await self.db.scalar(stmt)
+
     def apply_custom_sorting(self, stmt, sort_by, sort_order):
         if sort_by == "has_active_session":
             has_active_session = (
@@ -77,5 +93,7 @@ class RestaurantTableRepo(BaseRepo):
             )
 
         return stmt
+
+
 
 

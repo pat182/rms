@@ -51,3 +51,19 @@ def set_auth_cookies(
             max_age=refresh_exp,
             path="/"
         )
+
+
+def is_open_today(hours, current_day, current_time):
+    if hours.day_of_week == current_day:
+        if hours.opening_time < hours.closing_time:
+            return hours.opening_time <= current_time < hours.closing_time
+
+        return current_time >= hours.opening_time
+
+    previous_day = (current_day - 1) % 7
+
+    if hours.day_of_week == previous_day:
+        return current_time < hours.closing_time
+
+    return False
+

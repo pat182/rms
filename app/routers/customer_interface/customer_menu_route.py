@@ -19,18 +19,39 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 
+from ...services.restaurant import RestaurantTableService
+
 router = APIRouter(
     prefix="/customer/tables/{table_qr}",
     tags=["Customer Menu"]
 )
 
+@router.get("/status",)
+async def get_status(
+    table_qr :str,
+    db : AsyncSession = Depends(get_db),
+):
+    try:
+        table_service = RestaurantTableService(db)
+        is_open = await table_service.check_resto_status(table_qr)
+
+        return {
+            "success": True,
+            "data": is_open,
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Internal Server Error",
+        )
 
 
 @router.get("")
 async def get_menu(
     sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
     menu_service : MenuService = Depends(get_menu_service),
-
 ):
     dining_sesh, is_new, is_owner,is_approved = sesh_data
     restaurant = dining_sesh.restaurant_table.restaurant
