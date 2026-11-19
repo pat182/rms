@@ -33,11 +33,6 @@ async def customer_session_dependency(
     is_approved = await redis.exists(
         f"rms:dining_session:{dining_session.session_token}:approved:{device_token}"
     )
-    from app.core.logger import log_info
-    log_info("========================================")
-    log_info("IS_APPROVE:",is_approved)
-    log_info("IS_OWNER:",is_owner)
-    log_info("========================================")
     if not is_owner and not is_approved:
         raise HTTPException(
             status_code=403,
