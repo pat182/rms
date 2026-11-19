@@ -68,5 +68,16 @@ class ConnectionManager:
         except Exception:
             pass
 
+    def get_active_connections(self):
+        return {
+            group_id: len(connections)
+            for group_id, connections in self.active_connections.items()
+        }
+
+    def get_total_connections(self):
+        return sum(
+            len(connections)
+            for connections in self.active_connections.values()
+        )
 
 manager = ConnectionManager()
