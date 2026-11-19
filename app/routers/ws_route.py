@@ -6,6 +6,14 @@ from app.dependencies import (get_authenticated_websocket_user,authorize_websock
 router = APIRouter()
 
 
+
+@router.get("/ws/connections")
+async def get_websocket_connections():
+    return {
+        "total_connections": manager.get_total_connections(),
+        "groups": manager.get_active_connections(),
+    }
+
 @router.websocket("/ws/admin_notification/{restaurant_id}")
 async def admin_notification(
         websocket: WebSocket,
@@ -20,8 +28,10 @@ async def admin_notification(
     try:
         while True:
             await websocket.receive_text()
-
     except WebSocketDisconnect:
+        pass
+
+    finally:
         manager.disconnect(group_id, websocket)
 
 
@@ -40,6 +50,8 @@ async def join_request_websocket(
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(group_id, websocket)
 
 @router.websocket("/ws/dining-session/{session_token}")
@@ -54,7 +66,8 @@ async def dining_session_approval(
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-
+        pass
+    finally:
         manager.disconnect(group_id, websocket)
 
 
@@ -71,7 +84,8 @@ async def shared_cart(
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-
+        pass
+    finally:
         manager.disconnect(group_id, websocket)
 
 @router.websocket("/ws/order_status/{session_token}")
@@ -87,6 +101,8 @@ async def order_status_update(
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
+        pass
+    finally:
         manager.disconnect(group_id, websocket)
 
 
@@ -106,5 +122,11 @@ async def kitchen_orders(
         while True:
             await websocket.receive_text()
 
+
     except WebSocketDisconnect:
+
+        pass
+
+    finally:
+
         manager.disconnect(group_id, websocket)
