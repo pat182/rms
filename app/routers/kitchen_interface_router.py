@@ -52,7 +52,7 @@ async def update_order_status(
 ):
     try:
         order = await order_service.update_customer_order_status(order_id, payload,dining_session_token)
-        await db.flush()
+
         await db.commit()
 
         await manager.broadcast(

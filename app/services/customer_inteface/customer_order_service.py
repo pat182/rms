@@ -128,7 +128,7 @@ class CustomerOrderService:
 
         order.status = "canceled"
 
-        await self.db.flush()
+
         return order
 
 
