@@ -15,17 +15,25 @@ class CustomerOrderRepo(BaseRepo):
     def model(self):
         return CustomerOrder
 
-    async def get_order_by_sesh(self,order_id:int, session_token:str) -> CustomerOrder | None:
+    async def get_order_by_sesh(
+            self,
+            order_id: int,
+            session_token: str,
+    ) -> CustomerOrder | None:
         stmt = (
             select(self.model)
             .options(
-                selectinload(self.model.dining_session)
+                selectinload(self.model.dining_session).selectinload(
+                    DiningSession.restaurant_table
+                ),
+                selectinload(self.model.items),
             )
             .where(
                 self.model.id == order_id,
                 self.model.dining_session_token == session_token,
             )
         )
+
         result = await self.db.scalar(stmt)
 
         return result
@@ -213,7 +221,7 @@ class CustomerOrderRepo(BaseRepo):
             "revenue": row.revenue,
             "average_order_value": row.average_order_value,
             "completed": row.completed,
-            "cancelled": row.canceled,
+            "canceled": row.canceled,
             "pending": row.pending,
             "preparing": row.preparing,
         }
