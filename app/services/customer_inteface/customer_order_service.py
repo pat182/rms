@@ -1,4 +1,4 @@
-
+from fastapi.encoders import jsonable_encoder
 
 from ...model import DiningSession, CustomerOrder
 from ...model.repositories import CustomerOrderRepo,CustomerOrderItemRepo
@@ -13,6 +13,40 @@ class CustomerOrderService:
         self.db = db
         self.repo = CustomerOrderRepo(self.db)
         self.model = self.repo.model
+
+    @staticmethod
+    def build_socket_order_payload(
+            order: CustomerOrder,
+            dining_session: DiningSession,
+            event: str = "order_created",
+    ):
+        return jsonable_encoder({
+            "event": event,
+            "data": {
+                "order": {
+                    "id": order.id,
+                    "table_number": dining_session.restaurant_table_id,
+                    "status": order.status,
+                    "created_at": order.created_at,
+                    "items": [
+                        {
+                            "id": item.id,
+                            "menu_item_id": item.menu_item_id,
+                            "item_name": item.item_name,
+                            "unit_price": item.unit_price,
+                            "quantity": item.quantity,
+                            "special_request": item.special_request,
+                            "subtotal": item.subtotal,
+                            "created_at": item.created_at,
+                            "updated_at": item.updated_at,
+                        }
+                        for item in order.items
+                    ],
+                    "dining_session": dining_session,
+                    "subtotal": order.subtotal,
+                }
+            }
+        })
 
     @staticmethod
     def get_subtotal(items, price_key="unitPrice", quantity_key="quantity"):
@@ -61,14 +95,14 @@ class CustomerOrderService:
 
         return order
 
-    async def update_customer_order_status(self,order_id:int,payload:OrderStatusRequest,restaurant_id:int)->CustomerOrder:
+    async def update_customer_order_status(self,order_id:int,payload:OrderStatusRequest,session_token:str)->CustomerOrder:
 
-        order = await self.repo.get_by_id(order_id,restaurant_id)
+        order = await self.repo.get_order_by_sesh(order_id,session_token)
 
         if order is None:
             raise HTTPException(
                 status_code=404,
-                detail="No active menu found for this restaurant.",
+                detail="order not found.",
             )
 
         order.status = payload.status
