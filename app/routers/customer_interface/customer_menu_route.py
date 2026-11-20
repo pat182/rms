@@ -451,20 +451,8 @@ async def create_order(
             })
         )
 
-        order_payload = jsonable_encoder({
-            "event": "order_created",
-            "data": {
-                "order": {
-                    "id": order.id,
-                    "table_number": dining_sesh.restaurant_table.id,
-                    "status": order.status,
-                    "created_at": order.created_at,
-                    "items": order_items,
-                    "dining_session": dining_sesh,
-                    "subtotal": order.subtotal,
-                }
-            }
-        })
+
+        order_payload = order_service.build_socket_order_payload(order,dining_sesh,"order_created")
 
         # Notify kitchen
         await manager.broadcast(
@@ -532,6 +520,14 @@ async def cancel_order(
                     "cancel_reason": order.cancel_reason,
                 }
             })
+        )
+
+
+        order_payload = order_service.build_socket_order_payload(order, sesh_data, "order_updated")
+
+        await manager.broadcast(
+            f"restaurant:{order.restaurant_id}",
+            order_payload
         )
 
         return {

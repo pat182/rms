@@ -9,7 +9,7 @@ from ..schemas.customer_interface import GetOrdersResponse,OrderStatusRequest
 
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends, HTTPException,Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from fastapi.encoders import jsonable_encoder
 
 
@@ -44,12 +44,15 @@ async def get_orders(
 async def update_order_status(
     order_id: int,
     payload : OrderStatusRequest,
+    dining_session_token: str = Header(..., alias="X-DINING-SESSION-TOKEN"),
     db: AsyncSession = Depends(get_db),
-    restaurant=Depends(require_role("owner", "manager", "kitchen")),
-    order_service = Depends(get_customer_order_service)
+    restaurant=Depends(require_role("owner", "kitchen")),
+    order_service = Depends(get_customer_order_service),
+
 ):
     try:
-        order = await order_service.update_customer_order_status(order_id, payload,restaurant.id)
+        order = await order_service.update_customer_order_status(order_id, payload,dining_session_token)
+
         await db.commit()
 
         await manager.broadcast(
@@ -64,6 +67,14 @@ async def update_order_status(
             })
         )
 
+        await manager.broadcast(
+            f"restaurant:{order.restaurant_id}",
+            order_service.build_socket_order_payload(
+                order,
+                order.dining_session,
+                "order_updated",
+            )
+        )
         return {
             "success": True,
             "data": order
