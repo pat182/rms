@@ -29,7 +29,7 @@ router = APIRouter(
     ],
 )
 
-@router.get("",response_model=PaginatedResponse[TableWithDinningSessionData])
+@router.get("", response_model=PaginatedResponse[TableWithDinningSessionData])
 async def index(
     restaurant=Depends(require_role("owner")),
     page: int = Query(1, ge=1),
@@ -44,6 +44,17 @@ async def index(
 ):
     resto_table_repo = RestaurantTableRepo(db)
 
+    if dashboard:
+        dining_sessions_loader = selectinload(
+            resto_table_repo.model.dining_sessions.and_(
+                DiningSession.status.in_(["verified", "pending"])
+            )
+        )
+    else:
+        dining_sessions_loader = selectinload(
+            resto_table_repo.model.dining_sessions
+        )
+
     table, total = await resto_table_repo.filter(
         page,
         page_size,
@@ -51,16 +62,7 @@ async def index(
         sort_order,
         search,
         restaurant.id,
-        relationships=[
-            selectinload(
-                resto_table_repo.model.dining_sessions.and_(
-                    DiningSession.status.in_(["verified", "pending"])
-                )
-            )
-        ] if dashboard else [
-            selectinload(resto_table_repo.model.dining_sessions)
-        ],
-
+        relationships=[dining_sessions_loader],
     )
 
     return PaginatedResponse(
