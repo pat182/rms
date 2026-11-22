@@ -14,6 +14,13 @@ class RestaurantService:
         self.repo = RestaurantRepository(self.db)
         self.model = self.repo.model
 
+    @staticmethod
+    def validate_opening_hours(opening_time:time, closing_time:time):
+        if closing_time <= opening_time:
+            return "Closing time must be greater than opening time."
+        return None
+
+
     async def get_restaurant(self,restaurant_id,auth_user:User):
 
         result = await self.repo.get_user_restaurant(restaurant_id,auth_user.id)
@@ -66,19 +73,30 @@ class RestaurantService:
                 payload.configuration.operating_hours
         ):
             if resto_config.is_24_hours:
-                db_day.opening_time = None
-                db_day.closing_time = None
                 db_day.is_closed = False
             else:
+                if not payload_day.is_closed:
+                    if payload_day.opening_time is None or payload_day.closing_time is None:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Opening time and closing time are required for an open day."
+                        )
+
+                    msg = self.validate_opening_hours(
+                        payload_day.opening_time,
+                        payload_day.closing_time
+                    )
+
+                    if msg:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=msg
+                        )
+
                 db_day.opening_time = payload_day.opening_time
                 db_day.closing_time = payload_day.closing_time
                 db_day.is_closed = payload_day.is_closed
 
-        # from app.core.logger import log_info
-        # log_info("===========================================")
-        # log_info("RESTAURANT UPDATE")
-        # log_info("===========================================")
-        
         return restaurant
 
 
