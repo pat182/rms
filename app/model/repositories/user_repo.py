@@ -14,10 +14,16 @@ class UserRepository(BaseRepo):
         data = await self.db.scalar(
             select(self.model)
             .options(
-                selectinload(User.role),
-                selectinload(User.restaurant_users)
+                selectinload(self.model.role),
+                selectinload(self.model.restaurant_users)
                 .selectinload(RestaurantUser.restaurants)
-                .selectinload(Restaurant.country)
+                .selectinload(Restaurant.country),
+                selectinload(self.model.restaurant_users)
+                .selectinload(RestaurantUser.restaurants)
+                .selectinload(Restaurant.configuration)
+                .selectinload(RestaurantConfiguration.operating_hours)
+
+
 
             )
             .where(User.email == email)
@@ -32,8 +38,11 @@ class UserRepository(BaseRepo):
                 selectinload(self.model.role),
                 selectinload(self.model.restaurant_users)
                 .selectinload(RestaurantUser.restaurants)
+                .selectinload(Restaurant.country),
+                selectinload(self.model.restaurant_users)
+                .selectinload(RestaurantUser.restaurants)
                 .selectinload(Restaurant.configuration)
-                .selectinload(RestaurantConfiguration.operating_hours),
+                .selectinload(RestaurantConfiguration.operating_hours)
             )
             .where(self.model.id == _id)
         )

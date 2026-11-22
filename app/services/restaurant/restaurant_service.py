@@ -39,7 +39,7 @@ class RestaurantService:
 
         return restaurant
 
-    async def update_restaurant(self,restaurant:Restaurant,payload:CreateRestaurantRequest)->Restaurant:
+    async def update_restaurant(self,restaurant:Restaurant,payload:CreateRestaurantRequest)-> Restaurant:
 
         resto = await self.repo.get_resto_by_name(payload.restaurant_name,restaurant.id)
 
@@ -74,6 +74,11 @@ class RestaurantService:
                 db_day.closing_time = payload_day.closing_time
                 db_day.is_closed = payload_day.is_closed
 
+        # from app.core.logger import log_info
+        # log_info("===========================================")
+        # log_info("RESTAURANT UPDATE")
+        # log_info("===========================================")
+        
         return restaurant
 
 

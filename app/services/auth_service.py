@@ -65,6 +65,14 @@ class AuthService:
         self.db.add(db_ref_token)
         await self.db.commit()
         await self.db.refresh(db_ref_token)
+        from app.core.logger import log_info
+        test = [
+            ru.restaurants
+            for ru in user.restaurant_users
+            if ru.restaurants
+        ]
+        for t in test:
+            log_info("Restaurant User:",t.__dict__)
 
         return {
             "access_token": access_token,

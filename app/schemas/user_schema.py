@@ -1,7 +1,7 @@
 
 from datetime import datetime
 from app.core.base_schema import BaseSchema
-from app.schemas.restaurant.restaurant_schema import RestaurantData
+from app.schemas.restaurant.restaurant_schema import RestaurantData, RestaurantDataComplete
 from app.schemas.role_schema import RoleData
 
 from pydantic import ConfigDict
@@ -17,7 +17,7 @@ class UserResponse(BaseSchema):
     created_at: datetime
     updated_at: datetime
     role : RoleData
-    restaurants: list[RestaurantData] = []
+    restaurants: list[RestaurantDataComplete] = []
     model_config = ConfigDict(from_attributes=True)
 
 
