@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import SecurityInstance
 from app.model.repositories import UserRepository
-from app.model import UserRefreshToken, User, RestaurantUser, Restaurant
+from app.model import UserRefreshToken, User, RestaurantUser, Restaurant, RestaurantConfiguration
 from app.helper import clear_auth_cookies
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,16 +121,7 @@ class AuthService:
                 detail="Refresh token expired or revoked"
             )
 
-        user = await self.db.scalar(
-            select(User)
-            .options(
-                selectinload(User.role),
-                selectinload(User.restaurant_users)
-                .selectinload(RestaurantUser.restaurants)
-                .selectinload(Restaurant.country)
-            )
-            .where(User.id == int(payload['sub']) )
-        )
+        user = await UserRepository(self.db).modified_get_by_id(int(payload['sub']))
 
         if not user:
             clear_auth_cookies(self.response)
