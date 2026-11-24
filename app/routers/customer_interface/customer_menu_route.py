@@ -7,6 +7,7 @@ from ...core.dependencies import get_db
 from ...dependencies import get_redis
 from ...dependencies.customer_interface import get_or_create_dining_session, get_customer_order_service, customer_session_dependency
 from ...dependencies.menu_dependencies.menu_dependecies import get_menu_service, get_menu_item_service
+from ...dependencies.restaurant_dependencies import get_dining_session_service
 from ...model import DiningSession
 from ...model.repositories import CustomerOrderRepo
 from ...schemas.menu.menu_item_schema import MenuItemData, MenuItemResponse
@@ -19,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException, Header
 from fastapi.encoders import jsonable_encoder
 
-from ...services.restaurant import RestaurantTableService
+from ...services.restaurant import RestaurantTableService, DiningSessionService
 
 router = APIRouter(
     prefix="/customer/tables/{table_qr}",
@@ -52,33 +53,17 @@ async def get_status(
 async def get_menu(
     sesh_data: tuple[DiningSession, bool, bool,bool] = Depends(get_or_create_dining_session),
     menu_service : MenuService = Depends(get_menu_service),
+    sesh_service: DiningSessionService = Depends(get_dining_session_service)
 ):
     dining_sesh, is_new, is_owner,is_approved = sesh_data
     restaurant = dining_sesh.restaurant_table.restaurant
 
     if is_new:
+
         await manager.broadcast(
-                f"restaurant:{restaurant.id}",
-                {
-                    "event": "dining_session_created",
-                    "data": {
-                        "table_id": dining_sesh.restaurant_table.id,
-                        "session_id": dining_sesh.id,
-                        "session_token" : dining_sesh.session_token,
-                        "table_name": dining_sesh.restaurant_table.table_name,
-                        "is_active" : dining_sesh.is_active,
-                        "started_at": (
-                            dining_sesh.started_at.isoformat()
-                            if dining_sesh.started_at else None
-                        ),
-                        "closed_at": (
-                            dining_sesh.closed_at.isoformat()
-                            if dining_sesh.closed_at else None
-                        ),
-                        "status": dining_sesh.status,
-                    },
-                },
-            )
+            f"restaurant:{restaurant.id}",
+            sesh_service.build_dining_sesh_socket_payload(dining_sesh,"dining_session_created"),
+        )
 
     menu_data = await menu_service.get_active_menu(restaurant.id)
 
@@ -126,12 +111,6 @@ async def request_to_join(
         ex=300,
     )
 
-    # Notify the session owner.
-    # from app.core.logger import log_info
-    # log_info("====================================")
-    # log_info("request_key", request_key)
-    # log_info("SEND IT BITCH")
-    # log_info("====================================")
     await manager.broadcast(
         f"dining_session:{dining_sesh.session_token}",
         {
