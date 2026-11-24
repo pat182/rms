@@ -1,20 +1,25 @@
+import asyncio
 from redis.asyncio import Redis
-from datetime import datetime
+from datetime import datetime, timezone
 
-from ...dependencies import get_redis
-from ...model import (RestaurantTable,CustomerOrder)
+from ...core.logger import log_info
+from ...core.websocket import manager
+from ...model import (RestaurantTable, CustomerOrder, DiningSession)
 from ...model.repositories import DiningSessionRepo,CustomerOrderRepo
+from ...core.database import SessionLocal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from fastapi import HTTPException,Request,Depends
+from fastapi import HTTPException,Request
+from fastapi.encoders import jsonable_encoder
 
 class DiningSessionService:
     def __init__(self,db: AsyncSession):
         self.db = db
         self.repo = DiningSessionRepo(self.db)
         self.model = self.repo.model
+
 
 
     async def check_session_ownership(self,session_token: str, device_token: str | None ,redis: Redis)-> bool:
@@ -87,8 +92,6 @@ class DiningSessionService:
 
         return filters
 
-
-
     async def validate_session(self,session_token:str,table_id:int):
 
         session_stmt = (
@@ -138,3 +141,100 @@ class DiningSessionService:
         customer_order = await customer_repo.get_orders_by_session(session_token)
 
         return customer_order
+
+
+    @staticmethod
+    def build_dining_sesh_socket_payload(
+        dining_sesh: DiningSession,
+        event: str = "dining_session_created",
+        action: str = "created"
+    ):
+        return jsonable_encoder(
+            {
+                "event": event,
+                "data": {
+                    "dining_session": {
+                        "table_id": dining_sesh.restaurant_table.id,
+                        "session_id" : dining_sesh.id,
+                        "session_token" : dining_sesh.session_token,
+                        "table_name": dining_sesh.restaurant_table.table_name,
+                        "is_active": dining_sesh.is_active,
+                        "started_at": (
+                            dining_sesh.started_at.isoformat()
+                            if dining_sesh.started_at else None
+                        ),
+                        "closed_at": (
+                            dining_sesh.closed_at.isoformat()
+                                if dining_sesh.closed_at else None
+                            ),
+                        "status": dining_sesh.status,
+                    },
+                    "action": action
+                }
+            }
+        )
+
+
+
+    async def monitor_dining_session(
+            self,
+            redis,
+            dining_session: DiningSession,
+            warning_seconds: int = 300,
+    ):
+        owner_key = f"rms:dining_session:{dining_session.session_token}:owner"
+        try:
+            while True:
+                ttl = await redis.ttl(owner_key)
+
+                if ttl == -2:
+                    log_info("Dining session has expired: ", dining_session.session_token)
+                    break
+
+                if ttl == -1:
+                    log_info("Dining session key has no expiration: ", dining_session.session_token)
+                    break
+
+                if ttl <= warning_seconds:
+                    log_info("Dining session is about to expire: ", dining_session.session_token)
+                    # Notify restaurant admin
+                    await manager.broadcast(
+                        f"restaurant:{dining_session.restaurant_table.restaurant_id}",
+                        self.build_dining_sesh_socket_payload(dining_session,"dining_session_created","expiration_warn"),
+                    )
+
+                    await asyncio.sleep(ttl)
+                    # Check Redis again after the remaining TTL
+                    ttl = await redis.ttl(owner_key)
+                    if ttl == -2:
+                        async with SessionLocal() as db:
+                            session = await db.scalar(
+                                select(DiningSession)
+                                    .options(
+                                        selectinload(DiningSession.restaurant_table)
+                                        .selectinload(RestaurantTable.restaurant)
+                                    ).where(DiningSession.id == dining_session.id)
+                            )
+                            if session and session.is_active:
+                                session.status = "closed"
+                                session.is_active = False
+                                session.closed_at = datetime.now(timezone.utc)
+                                await db.commit()
+                                await manager.broadcast(
+                                    f"restaurant:{session.restaurant_table.restaurant_id}",
+                                    self.build_dining_sesh_socket_payload(session, "dining_session_created", "expired"),
+                                )
+                                log_info("STATUS", session.status)
+                                log_info("Dining session successfully closed: ", session.session_token)
+                        break
+                    continue
+
+                sleep_time = max(1, ttl - warning_seconds)
+                log_info("Monitor sleeping for: ", sleep_time)
+                await asyncio.sleep(sleep_time)
+
+
+        except asyncio.CancelledError:
+            log_info("Dining session monitor cancelled: ", dining_session.session_token)
+            raise
+
