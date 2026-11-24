@@ -1,3 +1,4 @@
+import asyncio
 from redis.asyncio import Redis
 
 from .. import get_redis
@@ -102,6 +103,7 @@ async def get_or_create_dining_session(
         )
 
         db.add(dining_session)
+
         await db.flush()
 
         owner_key = (
@@ -109,13 +111,21 @@ async def get_or_create_dining_session(
         )
 
         try:
+
             await redis.set(
                 owner_key,
                 device_token,
-                ex=10800,
+                ex=10800
             )
-
             await db.commit()
+
+            asyncio.create_task(
+                session_service.monitor_dining_session(
+                    redis,
+                    dining_session,
+                    600
+                )
+            )
 
         except Exception:
             await db.rollback()
