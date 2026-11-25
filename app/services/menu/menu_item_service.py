@@ -161,13 +161,6 @@ class MenuItemService:
 
         await self.db.flush()
 
-        # from app.core.logger import log_info
-
-        # for updated_item in updated_items:
-        #     log_info("==========================")
-        #     log_info("ITEMS", updated_item)
-        #
-        #     log_info("==========================")
         return updated_items
 
 

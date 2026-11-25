@@ -2,6 +2,7 @@ import asyncio
 from redis.asyncio import Redis
 
 from .. import get_redis
+from ...core.config import settings
 from ...core.dependencies import get_db
 from ...model import DiningSession, RestaurantTable
 from ...services.restaurant import RestaurantTableService,DiningSessionService
@@ -115,7 +116,8 @@ async def get_or_create_dining_session(
             await redis.set(
                 owner_key,
                 device_token,
-                ex=10800
+                # ex=10800 #3hours
+                ex=settings.REDIS_SESSION_TTL
             )
             await db.commit()
 
@@ -123,7 +125,7 @@ async def get_or_create_dining_session(
                 session_service.monitor_dining_session(
                     redis,
                     dining_session,
-                    600
+                    30
                 )
             )
 
