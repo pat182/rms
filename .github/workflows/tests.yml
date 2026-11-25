@@ -24,6 +24,7 @@ jobs:
       DB_USER: rms_test
       DB_PASSWORD: test_password
       REDIS_URL: redis_url
+      REDIS_SESSION_TTL: 1823
       STORAGE_PROVIDER: some_storage_provider
       SUPABASE_URL: "https://example.supabase.co"
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"

@@ -183,6 +183,12 @@ class DiningSessionService:
             warning_seconds: int = 300,
     ):
         owner_key = f"rms:dining_session:{dining_session.session_token}:owner"
+        stmt = (select(DiningSession)
+                            .options(
+                                selectinload(DiningSession.restaurant_table)
+                                .selectinload(RestaurantTable.restaurant)
+                            )
+                            .where(DiningSession.id == dining_session.id))
         try:
             while True:
                 ttl = await redis.ttl(owner_key)
@@ -197,24 +203,28 @@ class DiningSessionService:
 
                 if ttl <= warning_seconds:
                     log_info("Dining session is about to expire: ", dining_session.session_token)
-                    # Notify restaurant admin
-                    await manager.broadcast(
-                        f"restaurant:{dining_session.restaurant_table.restaurant_id}",
-                        self.build_dining_sesh_socket_payload(dining_session,"dining_session_created","expiration_warn"),
-                    )
+                    async with SessionLocal() as db:
+                        session = await db.scalar(stmt.execution_options(populate_existing=True))
+
+                        if not session or not session.is_active:
+                            log_info("Dining session is no longer active: ", dining_session.session_token)
+                            break
+
+                        await manager.broadcast(
+                            f"restaurant:{session.restaurant_table.restaurant_id}",
+                            self.build_dining_sesh_socket_payload(
+                                session,
+                                "dining_session_created",
+                                "expiration_warn",
+                            ),
+                        )
 
                     await asyncio.sleep(ttl)
                     # Check Redis again after the remaining TTL
                     ttl = await redis.ttl(owner_key)
                     if ttl == -2:
                         async with SessionLocal() as db:
-                            session = await db.scalar(
-                                select(DiningSession)
-                                    .options(
-                                        selectinload(DiningSession.restaurant_table)
-                                        .selectinload(RestaurantTable.restaurant)
-                                    ).where(DiningSession.id == dining_session.id)
-                            )
+                            session = await db.scalar(stmt.execution_options(populate_existing=True))
                             if session and session.is_active:
                                 session.status = "closed"
                                 session.is_active = False
