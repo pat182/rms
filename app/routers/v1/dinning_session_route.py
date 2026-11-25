@@ -1,12 +1,11 @@
 from typing import Optional, Literal
 from redis.asyncio import Redis
 
+from ...core.config import settings
 from ...core.websocket import manager
 from ...dependencies.restaurant_dependencies import (get_restaurant_table_service,get_dining_session_service)
 from ...core.dependencies import get_db
-from ...dependencies import (
-    require_role, get_redis
-)
+from ...dependencies import (require_role, get_redis)
 from ...model.repositories import DiningSessionRepo
 from ...schemas import PaginatedResponse
 from ...schemas.customer_interface import GetOrdersWithItemData
@@ -95,10 +94,7 @@ async def update_dinning_sesh_status(
 
             if session_keys:
                 await redis.delete(*session_keys)
-            # from app.core.logger import log_info
-            # log_info("===============================================")
-            # log_info("TOKEN", session_token)
-            # log_info("===============================================")
+
             await redis.delete(f"rms:cart:{session_token}")
 
         return {
@@ -133,4 +129,36 @@ async def get_sesh_order(
         raise HTTPException(
             status_code=500,
             detail="Failed to fetch orders",
+        )
+
+
+@router.put("/{session_token}/extend")
+async def extend_dining_session(
+    session_token: str,
+    restaurant=Depends(require_role("owner")),
+    redis: Redis = Depends(get_redis),
+):
+    try:
+        owner_key = f"rms:dining_session:{session_token}:owner"
+
+        extended = await redis.expire(owner_key, settings.REDIS_SESSION_TTL)
+
+        if not extended:
+            raise HTTPException(
+                status_code=404,
+                detail="Dining session not found or expired.",
+            )
+
+        return {
+            "success": True,
+            "message": "Dining session extended.",
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
         )
