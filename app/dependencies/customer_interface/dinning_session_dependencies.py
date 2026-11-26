@@ -125,7 +125,7 @@ async def get_or_create_dining_session(
                 session_service.monitor_dining_session(
                     redis,
                     dining_session,
-                    300
+                    settings.REDIS_SESSION_WARNING_THRESHOLD
                 )
             )
 
