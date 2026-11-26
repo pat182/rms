@@ -25,6 +25,7 @@ jobs:
       DB_PASSWORD: test_password
       REDIS_URL: redis_url
       REDIS_SESSION_TTL: 1823
+      REDIS_SESSION_WARNING_THRESHOLD: 30
       STORAGE_PROVIDER: some_storage_provider
       SUPABASE_URL: "https://example.supabase.co"
       SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key"
