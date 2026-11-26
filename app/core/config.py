@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DB_PASSWORD: str
     REDIS_URL: str
     REDIS_SESSION_TTL: int
+    REDIS_SESSION_WARNING_THRESHOLD : int
     STORAGE_PROVIDER:str
     SECRET_KEY: str
     JWT_HASHING_ALGORITHM: str
